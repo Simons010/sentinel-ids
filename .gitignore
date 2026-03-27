@@ -1,0 +1,68 @@
+# Project-level gitignore for Sentinel-IDS
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# Node / Frontend
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+dist/
+build/
+.vite/
+.cache/
+
+# ML artifacts and datasets
+ml_engine/models/*.pkl
+ml_engine/models/*.joblib
+ml_engine/models/*.onnx
+datasets/
+data/
+
+# IDEs and editors
+.vscode/
+.idea/
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.local.yml
+*.env
+
+# Tests / coverage
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+
+# Logs
+logs/
+*.log
+
+# Secrets / keys
+*.key
+*.pem
+secrets/

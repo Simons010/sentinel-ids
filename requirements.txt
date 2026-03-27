@@ -1,0 +1,10 @@
+Django==4.2.7
+djangorestframework
+mysqlclient
+gunicorn
+django-cors-headers   
+numpy
+pandas
+scikit-learn
+joblib
+google-generativeai
