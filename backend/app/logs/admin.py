@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import NetworkLog, Report, UploadedFile
+from backend.app.logs.models import NetworkLog, UploadedFile
 
 @admin.register(NetworkLog)
 class NetworkLogAdmin(admin.ModelAdmin):
@@ -35,7 +35,3 @@ class UploadedFileAdmin(admin.ModelAdmin):
     )
     search_fields = ('filename', 'status')
 
-@admin.register(Report)
-class ReportAdmin(admin.ModelAdmin):
-    list_display = ('generated_at', 'report_type', 'description')
-    search_fields = ('report_type', 'generated_at')

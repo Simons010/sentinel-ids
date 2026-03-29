@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'app.detection',
     'app.logs',
     'app.users',
+    'app.reports',
+    'app.settings_app',
     
 ]
 

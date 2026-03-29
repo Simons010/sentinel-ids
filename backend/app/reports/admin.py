@@ -1,3 +1,7 @@
 from django.contrib import admin
+from backend.app.reports.models import Report
 
-# Register your models here.
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ('generated_at', 'report_type', 'description')
+    search_fields = ('report_type', 'generated_at')

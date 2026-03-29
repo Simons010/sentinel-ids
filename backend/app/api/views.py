@@ -185,3 +185,4 @@ class DashboardStatsView(APIView):
             "severity": latest.severity,
             "confidence": latest.log.ml_score if latest.log else 0,
         }
+
