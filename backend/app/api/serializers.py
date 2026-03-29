@@ -5,6 +5,7 @@ from ml_engine.normalization.normalizer import LogNormalizer
 from dateutil.parser import parse as parse_date
 from django.utils import timezone
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 normalizer = LogNormalizer()
@@ -30,24 +31,19 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         if not normalized_entries:
             raise serializers.ValidationError({"logs": "No parseable log entries found."})
+        
+        # assign a common session_id if this is a batch
+        is_batch = len(normalized_entries) > 1
+        session_id = uuid.uuid4() if is_batch else None
 
         instances = []
-        for entry in normalized_entries:
+        for index, entry in enumerate (normalized_entries):
             # Parse timestamp safely — syslog has no year, so we append current year
-            parsed_ts = None
-            raw_ts = entry.get("timestamp")
-            if raw_ts:
-                try:
-                    current_year = timezone.now().year
-                    parsed_ts = parse_date(f"{raw_ts} {current_year}")
-                    if timezone.is_naive(parsed_ts):
-                        parsed_ts = timezone.make_aware(parsed_ts)
-                except Exception:
-                    parsed_ts = timezone.now()  # fallback to now if unparseable
-            else:
-                parsed_ts = timezone.now()
+            parsed_ts = self._parse_timestamp(entry.get("timestamp"))
 
             instance = NetworkLog.objects.create(
+                session_id=session_id,
+                sequence_index=index if is_batch else None,
                 timestamp=parsed_ts,
                 host=entry.get("host"),
                 process=entry.get("process"),
@@ -65,6 +61,18 @@ class NetworkLogSerializer(serializers.ModelSerializer):
             instances.append(instance)
 
         return instances
+    
+    def _parse_timestamp(self, raw_ts):
+        # append the current year for parsing. If parsing fails, default to now.
+        from django.utils import timezone
+        from dateutil.parser import parse as parse_date
+        if raw_ts:
+            try:
+                parsed = parse_date(f"{raw_ts} {timezone.now().year}")
+                return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+            except Exception:
+                pass
+        return timezone.now()
 
 
 class AlertSerializer(serializers.ModelSerializer):

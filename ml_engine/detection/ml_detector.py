@@ -40,7 +40,6 @@ class MLDetector:
     
         print("log data:", log_data)
         
-        
         if isinstance(log_data, list):
             normalized_logs = log_data
         elif isinstance(log_data, dict):
@@ -53,7 +52,7 @@ class MLDetector:
         # build features
         dfs = []
         for log in normalized_logs:
-            print("Normalized logs:", normalized_logs)
+            # print("Normalized logs:", normalized_logs)
             
             df = self.builder.build(log)
             

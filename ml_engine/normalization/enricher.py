@@ -44,23 +44,96 @@ class LogEnricher:
         
     def detect_event_type(self, msg):
         msg = msg.lower()
-        if "failed login" in msg or "authentication failure" in msg:
+
+        # --- Authentication ---
+        if "failed password" in msg or "authentication failure" in msg or "failed login" in msg:
             return "auth_failure"
-        if "accepted password" in msg:
+        if "invalid user" in msg or "illegal user" in msg:
+            return "invalid_user"
+        if "accepted password" in msg or "session opened" in msg:
             return "successful_login"
+        if "session closed" in msg or "disconnected" in msg:
+            return "logout"
+        if "account locked" in msg or "too many authentication failures" in msg:
+            return "account_lockout"
+        if "root" in msg and ("login" in msg or "session" in msg):
+            return "root_login"
+        if "publickey" in msg or "accepted publickey" in msg:
+            return "ssh_key_auth"
+        if "password changed" in msg or "passwd" in msg:
+            return "password_change"
+
+        # --- Privilege Escalation ---
+        if "sudo" in msg and "authentication failure" in msg:
+            return "sudo_failure"
+        if "sudo" in msg or " su " in msg:
+            return "privilege_escalation"
+        if "permission denied" in msg or "operation not permitted" in msg:
+            return "permission_denied"
+
+        # --- Network ---
         if "port scan" in msg:
             return "port_scan"
-        if "sql injection" in msg:
-            return "sql_injection"
-        if "xss attempt" in msg:
-            return "xss_attempt"
+        if "syn flood" in msg:
+            return "syn_flood"
         if "ddos" in msg:
             return "ddos_attack"
-        if "sudo" in msg:
-            return "privilege_escalation"
-        if "curl" in msg or "wget" in msg:
+        if "connection refused" in msg:
+            return "connection_refused"
+        if "blocked" in msg or "drop" in msg and "iptables" in msg:
+            return "firewall_block"
+        if "dns" in msg and ("query" in msg or "lookup" in msg):
+            return "dns_lookup"
+
+        # --- Web Attacks ---
+        if "sql injection" in msg or "sqlmap" in msg:
+            return "sql_injection"
+        if "xss" in msg or "<script" in msg:
+            return "xss_attempt"
+        if "../" in msg or "path traversal" in msg:
+            return "path_traversal"
+        if "nikto" in msg or "dirbuster" in msg or "gobuster" in msg:
+            return "web_scan"
+        if "select " in msg and "from " in msg:
+            return "sql_injection"
+        if "/etc/passwd" in msg or "/etc/shadow" in msg:
+            return "file_access"
+
+        # --- Malware & Execution ---
+        if "curl" in msg or "wget" in msg or "fetch" in msg:
             return "remote_download"
+        if "bash -i" in msg or "/dev/tcp" in msg or "nc -e" in msg:
+            return "reverse_shell"
+        if "base64" in msg and ("decode" in msg or "|" in msg):
+            return "obfuscated_command"
+
+        # --- Persistence ---
         if "cron" in msg:
             return "scheduled_task"
+        if "systemctl enable" in msg or "service install" in msg:
+            return "service_install"
+        if "useradd" in msg or "adduser" in msg:
+            return "user_created"
+        if "usermod" in msg:
+            return "user_modified"
+        if "authorized_keys" in msg:
+            return "ssh_key_added"
+
+        # --- Data & Exfiltration ---
+        if "rm -rf" in msg or "shred" in msg:
+            return "file_deletion"
+        if "tar " in msg or "zip " in msg:
+            return "archive_creation"
+
+        # --- System ---
+        if "reboot" in msg or "shutdown" in msg:
+            return "system_reboot"
+        if "systemctl stop" in msg or "service stop" in msg:
+            return "service_stop"
+        if "truncate" in msg or "logrotate" in msg:
+            return "log_cleared"
+        if "insmod" in msg or "modprobe" in msg:
+            return "kernel_module"
+
         return "unknown"
-        
+            

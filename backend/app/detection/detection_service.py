@@ -2,20 +2,20 @@ from app.alerts.models import Alert
 from ml_engine.detection.decision_engine import DecisionEngine
 from django.conf import settings
 
-# decision_engine = DecisionEngine(
-#     settings.ML_MODEL_PATH, 
-#     settings.FEATURE_EXTRACTOR_PATH,
+_engine = DecisionEngine(
+    settings.ML_MODEL_PATH, 
+    settings.FEATURE_EXTRACTOR_PATH,
     
-#     # Initialize with AI enabled if key exists
-#     ai_enabled = settings.AI_ANALYSIS_ENABLED
-# )
+    # Initialize with AI enabled if key exists
+    ai_enabled = settings.AI_ANALYSIS_ENABLED
+)
 
 
 class DetectionService:
     
-    def __init__(self, decision_engine):
-        self.engine = decision_engine
-
+    def __init__(self, engine):
+        self.engine = engine
+    
     def analyze_log(self, log_instance):
 
         log_data = {
@@ -26,6 +26,10 @@ class DetectionService:
             "dst_port": log_instance.dst_port or 0,
             "proto": log_instance.protocol or "tcp",
             "service": log_instance.service or "unknown",
+            
+            "event_type": log_instance.event_type or "unknown",
+            "host": log_instance.host or "unknown",
+            "process": log_instance.process or "",
         }
 
         analysis = self.engine.analyze(log_data)
@@ -36,7 +40,7 @@ class DetectionService:
 
         if analysis["is_suspicious"]:
             self._create_alert(log_instance, analysis)
-            ai_info = analysis.get("ai_analysis" or {})
+            ai_info = analysis.get("ai_analysis") or {}
             log_instance.log_type = f"Suspicious, Level: {ai_info.get("severity")}" 
         else:
             log_instance.log_type = "Informational/Normal"
@@ -71,5 +75,25 @@ class DetectionService:
             
         )
         
-    
+    def _create_chain_alert(self, logs, correlation):
+        severity_score_map = {
+            "critical": 4,
+            "high": 3,
+            "medium": 2,
+            "low": 1,
+            }
+        Alert.objects.create(
+            log = logs[0],
+            attack_type=correlation["chain_name"],
+            severity = correlation["severity"],
+            severity_score= severity_score_map.get(correlation["severity"], 0),
+            description=(
+                f"{correlation['description']}\n"
+                f"Event chain: {' → '.join(correlation['event_sequence'])}\n"
+                f"IPs involved: {', '.join(correlation['involved_ips'])}\n"
+                f"Logs in batch: {correlation['log_count']}"
+            )
+        )
+        
+detection_service = DetectionService(_engine)
     

@@ -10,20 +10,15 @@ from rest_framework.pagination import PageNumberPagination
 
 from datetime import timedelta
 
+from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
 from app.api.serializers import AlertSerializer
-from ml_engine.detection.decision_engine import DecisionEngine
 from app.api.serializers import NetworkLogSerializer
-from app.detection.detection_service import DetectionService
 from app.logs.models import NetworkLog
 from app.alerts.models import Alert
+from ml_engine.detection.correlator import BatchCorrelator
 
-decision_engine = DecisionEngine(
-    settings.ML_MODEL_PATH, 
-    settings.FEATURE_EXTRACTOR_PATH,
-    ai_enabled = settings.AI_ANALYSIS_ENABLED
-)
-detection_service = DetectionService(decision_engine)
+correlator = BatchCorrelator()
 
 class LogIngestView(APIView): 
     
@@ -41,6 +36,7 @@ class LogIngestView(APIView):
             results = []
             alerts_created = 0
 
+            # Individual log analysis
             for log_instance in logs:
 
                 analysis = detection_service.analyze_log(log_instance)
@@ -53,15 +49,26 @@ class LogIngestView(APIView):
                     "suspicious": log_instance.is_suspicious,
                     "score": log_instance.ml_score
                 })
+            
+            # Batch correlation
+            correlation = None
+            if len(logs) > 1:
+                correlation = correlator.correlate(logs)
+                if correlation:
+                    # create a single alert for the whole chain
+                    detection_service._create_chain_alert(logs, correlation)
+                    alerts_created += 1
 
             return Response({
                 "status": "success",
                 "processed": len(logs),
                 "alerts_generated": alerts_created,
-                "results": results
+                "results": results,
+                "correlation": correlation,
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     
 class AlertListView(generics.ListAPIView):
     
