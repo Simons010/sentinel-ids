@@ -59,7 +59,6 @@ docker-compose.*.local.yml
 htmlcov/
 
 # Logs
-logs/
 *.log
 
 # Secrets / keys
