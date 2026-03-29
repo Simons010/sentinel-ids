@@ -45,7 +45,7 @@ class DecisionEngine:
         if self.ml_ready and isinstance(log_entry, dict):
             try:
                 print("\n Triggering ML Analysis...")
-                ml_res = self.ml_detector.predict(log_entry)
+                ml_res = self.ml_detector.predict(log_entry)[0]
                 result['ml_analysis'] = ml_res
                 
                 if ml_res.get('is_anomaly'):
@@ -66,7 +66,7 @@ class DecisionEngine:
 
         # 3. AI Analysis (Semantic) - Trigger if suspicious or explicitly requested
         # To save costs/latency, typically only run if suspicious or high severity
-        if self.ai_enabled and (result['is_suspicious'] or log_entry.get("message")):
+        if self.ai_enabled and (result['is_suspicious'] or log_entry.get("message", "").strip()):
             try:
                 print("\n Triggering AI Analysis...")
                 ai_res = self.ai_analyzer.analyze_log(log_entry)

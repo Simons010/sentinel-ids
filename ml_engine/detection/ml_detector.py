@@ -6,6 +6,7 @@ from django.conf import settings
 
 from ml_engine.preprocessing.cleaner import DataCleaner
 from ml_engine.preprocessing.feature_builder import FeatureBuilder
+from ml_engine.normalization.normalizer import LogNormalizer
  
 class MLDetector:
     def __init__(self, model_path, extractor_path):
@@ -36,22 +37,40 @@ class MLDetector:
         """
         if self.model is None:
             self.load_model()
-
-        # Convert to DataFrame
-        if isinstance(log_data, dict):
-            df = pd.DataFrame([log_data])
-        elif isinstance(log_data, list):
-            df = pd.DataFrame(log_data)
+    
+        print("log data:", log_data)
+        
+        
+        if isinstance(log_data, list):
+            normalized_logs = log_data
+        elif isinstance(log_data, dict):
+            normalized_logs = [log_data]
         elif isinstance(log_data, pd.DataFrame):
-            df = log_data
+            normalized_logs = log_data.to_dict(orient='records')
         else:
-            raise ValueError("Unsupported data format")
-
+            raise ValueError("Unsupported log_data format. Must be str, dict, list of dicts, or DataFrame.")
+        
         # build features
-        df = self.builder.build(log_data)
+        dfs = []
+        for log in normalized_logs:
+            print("Normalized logs:", normalized_logs)
+            
+            df = self.builder.build(log)
+            
+            if df is None:
+                print("FeatureBuilder returned None for log:", log)
+                continue
+            dfs.append(df)
+        
+        if len(dfs) == 0:
+            raise ValueError("No valid features generated from logs")
+        
+        df = pd.concat(dfs, ignore_index=True)
         
         # Clean
         df_clean = self.cleaner.clean(df)
+        if df_clean is None or len(df_clean) == 0:
+            raise ValueError("Cleaner returned empty dataset")
 
         # Transform
         try:
@@ -74,4 +93,4 @@ class MLDetector:
                 'label': 'Attack' if pred == 1 else 'Normal'
             })
             
-        return results if len(results) > 1 else results[0]
+        return results 

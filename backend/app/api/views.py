@@ -6,17 +6,23 @@ from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from datetime import timedelta
 
 from app.alerts.models import Alert
 from app.api.serializers import AlertSerializer
-from ml_engine.detection import decision_engine
+from ml_engine.detection.decision_engine import DecisionEngine
 from app.api.serializers import NetworkLogSerializer
 from app.detection.detection_service import DetectionService
 from app.logs.models import NetworkLog
 from app.alerts.models import Alert
 
+decision_engine = DecisionEngine(
+    settings.ML_MODEL_PATH, 
+    settings.FEATURE_EXTRACTOR_PATH,
+    ai_enabled = settings.AI_ANALYSIS_ENABLED
+)
 detection_service = DetectionService(decision_engine)
 
 class LogIngestView(APIView): 
@@ -61,7 +67,7 @@ class AlertListView(generics.ListAPIView):
     
     queryset = Alert.objects.all().order_by("-created_at")
     serializer_class = AlertSerializer
-    pagination = settings.REST_FRAMEWORK
+    pagination_class = PageNumberPagination
     
     def get_queryset(self):
 

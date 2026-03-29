@@ -2,30 +2,30 @@ from app.alerts.models import Alert
 from ml_engine.detection.decision_engine import DecisionEngine
 from django.conf import settings
 
-decision_engine = DecisionEngine(
-    settings.ML_MODEL_PATH, 
-    settings.FEATURE_EXTRACTOR_PATH,
+# decision_engine = DecisionEngine(
+#     settings.ML_MODEL_PATH, 
+#     settings.FEATURE_EXTRACTOR_PATH,
     
-    # Initialize with AI enabled if key exists
-    ai_enabled = settings.AI_ANALYSIS_ENABLED
-)
+#     # Initialize with AI enabled if key exists
+#     ai_enabled = settings.AI_ANALYSIS_ENABLED
+# )
 
 
 class DetectionService:
     
-    def __init__(self, engine):
+    def __init__(self, decision_engine):
         self.engine = decision_engine
 
     def analyze_log(self, log_instance):
 
         log_data = {
-            "message": log_instance.message,
-            "src_ip": log_instance.src_ip,
-            "dst_ip": log_instance.dst_ip,
-            "src_port": log_instance.src_port,
-            "dst_port": log_instance.dst_port,
-            "proto": log_instance.protocol,
-            "service": log_instance.service,
+            "message": log_instance.message or "",
+            "src_ip": log_instance.src_ip or None,
+            "dst_ip": log_instance.dst_ip or None,
+            "src_port": log_instance.src_port or 0,
+            "dst_port": log_instance.dst_port or 0,
+            "proto": log_instance.protocol or "tcp",
+            "service": log_instance.service or "unknown",
         }
 
         analysis = self.engine.analyze(log_data)
@@ -36,7 +36,8 @@ class DetectionService:
 
         if analysis["is_suspicious"]:
             self._create_alert(log_instance, analysis)
-            log_instance.log_type = f"Suspicious, Level: {analysis.get("ai_analysis", {}).get("severity")}" 
+            ai_info = analysis.get("ai_analysis" or {})
+            log_instance.log_type = f"Suspicious, Level: {ai_info.get("severity")}" 
         else:
             log_instance.log_type = "Informational/Normal"
             
