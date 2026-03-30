@@ -1,5 +1,5 @@
 from django.contrib import admin
-from backend.app.logs.models import NetworkLog, UploadedFile
+from app.logs.models import NetworkLog, UploadedFile
 
 @admin.register(NetworkLog)
 class NetworkLogAdmin(admin.ModelAdmin):

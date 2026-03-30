@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from app.logs.models import NetworkLog
+from app.logs.models import NetworkLog, UploadedFile
 from app.alerts.models import Alert
+from app.reports.models import Report
+from app.settings_app.models import SystemSetting
 from ml_engine.normalization.normalizer import LogNormalizer
 from dateutil.parser import parse as parse_date
 from django.utils import timezone
@@ -64,8 +66,6 @@ class NetworkLogSerializer(serializers.ModelSerializer):
     
     def _parse_timestamp(self, raw_ts):
         # append the current year for parsing. If parsing fails, default to now.
-        from django.utils import timezone
-        from dateutil.parser import parse as parse_date
         if raw_ts:
             try:
                 parsed = parse_date(f"{raw_ts} {timezone.now().year}")
@@ -81,3 +81,82 @@ class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
         fields = '__all__'
+        
+class UploadedFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UploadedFile
+        fields = [
+            "id",
+            "filename",
+            "file_size",
+            "upload_at",
+            "status",
+            "total_logs",
+            "valid_logs",
+            "invalid_logs",
+            "parse_errors",
+            "threats_found",
+            "claen_logs",
+            "error_message",
+        ]
+        read_only_fields = [
+            "uploaded_at", "status", "total_logs", "valid_logs", "invalid_logs", "parse_errors", "threats_found", "clean_logs", "error_message"
+        ]
+        
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = [
+            "id",
+            "name",
+            "report_type",
+            "format",
+            "start_date",
+            "end_date",
+            "generated_at",
+            "generated_by",
+            "file_size",
+            "file_size_display",
+            'total_logs',
+            "total_threats",
+            "critical_threats",
+            "top_attack_type",
+        ]
+        read_only_fields = [
+            "generated_at", "generated_by", "file_size", "total_logs", "total_threats", "critical_threats", "top_attack_type",
+        ]
+        
+        def get_file_size_display(self,obj):
+            """Convert bytes to human readable string fo frontend display"""
+            size = obj.file_size
+            if size < 1024:
+                return f"{size} B"
+            elif size < 1024 **2:
+                return f"{size / 1024:.1f} KB"
+            elif size < 1024 **3:
+                return f"{size / 1024 ** 2:.1f} MB"
+            return f"{size / 1024 **3:.1f} GB"
+        
+class SystemSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemSetting
+        fields = [
+            "id",
+            # Notifications
+            "email_alerts",
+            "push_notifications",
+            "slack_integration",
+            "sms_alerts",
+            # Security
+            "two_factor_auth",
+            "auto_block_threats",
+            "ip_whitelisting",
+            "session_timeout",
+            # Database
+            "retention_days",
+            "auto_archive",
+            # AI
+            "ai_model_mode",
+            "continuous_learning",
+            "ai_sensitivity",
+        ]

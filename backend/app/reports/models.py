@@ -31,7 +31,7 @@ class Report(models.Model):
     total_logs = models.IntegerField(default=0)
     total_threats = models.IntegerField(default=0)
     critical_threats = models.IntegerField(default=0)
-    top_attack_type = models.CharField(max_lenth=100, null=True, blank=True)
+    top_attack_type = models.CharField(max_length=100, null=True, blank=True)
     
     def __str__(self):
         return f"{self.name} ({self.generated_at.date()})"

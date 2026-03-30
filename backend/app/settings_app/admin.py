@@ -1,8 +1,8 @@
 from django.contrib import admin
-from backend.app.settings_app.models import SystemSettings
+from app.settings_app.models import SystemSetting
 
-@admin.register(SystemSettings)
-class SystemSettingsAdmin(admin.ModelAdmin):
+@admin.register(SystemSetting)
+class SystemSettingAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "email_alerts",

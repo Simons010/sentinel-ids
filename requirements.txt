@@ -8,3 +8,6 @@ pandas
 scikit-learn
 joblib
 google-generativeai
+channels
+channels-redis
+

@@ -1,7 +1,7 @@
 from django.db import models
 
 # settings model
-class SystemSettings(models.Model):
+class SystemSetting(models.Model):
     user = models.OneToOneField("auth.User", on_delete=models.CASCADE, null=True, blank=True)
     
     # Notifications
