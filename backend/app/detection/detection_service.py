@@ -1,4 +1,5 @@
 from app.alerts.models import Alert
+from app.ws.broadcaster import broadcast_log_event
 from ml_engine.detection.decision_engine import DecisionEngine
 from django.conf import settings
 
@@ -46,6 +47,9 @@ class DetectionService:
             log_instance.log_type = "Informational/Normal"
             
         log_instance.save(update_fields=["log_type"])
+        
+        # Broadcast to all Websocket clients
+        broadcast_log_event(log_instance, analysis)
 
         return analysis
 
