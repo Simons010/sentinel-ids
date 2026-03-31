@@ -55,9 +55,12 @@ class DetectionService:
 
     def _create_alert(self, log, analysis):
         
-        attack_type = analysis.get("ai_analysis", {}).get("attack_type", "Suspicious Activity")
+        ai_info = analysis.get("ai_analysis") or {}
+        rule_alerts = analysis.get("alerts", [])
         
-        severity = analysis.get("ai_analysis", {}).get("severity")
+        attack_type = ai_info.get("attack_type") or "Suspicious Activity"
+        severity = ai_info.get("severity") or "low"
+        
         if severity == "critical":
             severity_score = 4
         elif severity == "high":
@@ -75,7 +78,7 @@ class DetectionService:
             severity = severity,
             severity_score = severity_score,
             # alert_type="Suspicious Log Detected",
-            description="\n".join(analysis.get("alerts", [])),
+            description="\n".join(rule_alerts),
             
         )
         
