@@ -17,9 +17,11 @@ class NetworkLogAdmin(admin.ModelAdmin):
         'ml_score',
         'is_suspicious', 
         'log_type', 
+        'created_at',
     )
 
     search_fields = ('src_ip', 'dst_ip', 'protocol', 'service', 'timestamp', 'is_suspicious')
+    list_filter = ('created_at','process', )
  
 @admin.register(UploadedFile)
 class UploadedFileAdmin(admin.ModelAdmin):

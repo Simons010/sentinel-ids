@@ -14,3 +14,4 @@ class AlertAdmin(admin.ModelAdmin):
     ]
     
     search_fields = ['severity_score','severity','created_at']
+    list_filter = ['severity', 'created_at']

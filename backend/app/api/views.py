@@ -101,7 +101,7 @@ class DashboardStatsView(APIView):
 
         last_24h = timezone.now() - timedelta(hours=24)
 
-        logs_24h = NetworkLog.objects.filter(timestamp__gte=last_24h)
+        logs_24h = NetworkLog.objects.filter(created_at__gte=last_24h)
         alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
         
         total_logs = NetworkLog.objects.count()

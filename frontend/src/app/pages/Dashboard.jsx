@@ -26,7 +26,7 @@ export default function Dashboard() {
         {
           icon: FileText,
           title: "Total Logs Processed Today",
-          value: data.total_logs_24h?.toLocaleString() ?? "--",
+          value: data.total_logs_24h?.toString() ?? "--",
           change: 12.5,
           sparklineData: [45, 52, 48, 58, 65, 72, 68, 75, 82, 88, 95, 92],
           accentColor: "#22D3EE",

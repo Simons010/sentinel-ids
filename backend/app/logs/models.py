@@ -6,7 +6,8 @@ class NetworkLog(models.Model):
     sequence_index = models.IntegerField(null=True, blank=True)  # order within batch
     
     # Syslog parsed fields
-    timestamp = models.DateTimeField(null=True, blank=True)  
+    timestamp = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)  
     host = models.CharField(max_length=255, null=True, blank=True)
     process = models.CharField(max_length=100, null=True, blank=True)
     pid = models.IntegerField(null=True, blank=True)
