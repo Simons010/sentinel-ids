@@ -1,3 +1,5 @@
+import { useDashboardStats } from "../hooks/useDashboardStats";
+import { useLiveFeed } from "../hooks/useLiveFeed";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -13,68 +15,79 @@ import {
   Target,
   Heart,
 } from "lucide-react";
-import { useLiveFeed } from "../hooks/useLiveFeed";
 
 export default function Dashboard() {
+  const { data, loading, error } = useDashboardStats();
   const { events, connected } = useLiveFeed();
 
   // Mock data for stat cards
-  const statCardsData = [
-    {
-      icon: FileText,
-      title: "Total Logs Processed Today",
-      value: "2.4M",
-      change: 12.5,
-      sparklineData: [45, 52, 48, 58, 65, 72, 68, 75, 82, 88, 95, 92],
-      accentColor: "#22D3EE",
-    },
-    {
-      icon: AlertTriangle,
-      title: "Active Alerts",
-      value: "247",
-      change: -8.2,
-      sparklineData: [
-        280, 275, 268, 260, 255, 252, 248, 247, 246, 247, 248, 247,
-      ],
-      accentColor: "#EF4444",
-    },
-    {
-      icon: Shield,
-      title: "Critical Threats",
-      value: "12",
-      change: -15.3,
-      sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
-      accentColor: "#F97316",
-    },
-    {
-      icon: Activity,
-      title: "Anomaly Detection Rate",
-      value: "4.2%",
-      change: 2.1,
-      sparklineData: [
-        3.8, 3.9, 4.0, 4.1, 4.0, 4.1, 4.2, 4.3, 4.2, 4.2, 4.1, 4.2,
-      ],
-      accentColor: "#F59E0B",
-    },
-    {
-      icon: Target,
-      title: "Model Accuracy",
-      value: "96.8%",
-      change: 0.3,
-      sparklineData: [
-        95.8, 96.0, 96.2, 96.3, 96.4, 96.5, 96.6, 96.7, 96.8, 96.8, 96.9, 96.8,
-      ],
-      accentColor: "#10B981",
-    },
-    {
-      icon: Heart,
-      title: "System Health Score",
-      value: "98/100",
-      change: 1.0,
-      sparklineData: [96, 96, 97, 97, 98, 98, 98, 97, 98, 98, 98, 98],
-      accentColor: "#10B981",
-    },
-  ];
+  const statCardsData = data
+    ? [
+        {
+          icon: FileText,
+          title: "Total Logs Processed Today",
+          value: data.total_logs_24h?.toLocaleString() ?? "--",
+          change: 12.5,
+          sparklineData: [45, 52, 48, 58, 65, 72, 68, 75, 82, 88, 95, 92],
+          accentColor: "#22D3EE",
+        },
+        {
+          icon: AlertTriangle,
+          title: "Active Alerts",
+          value: data.active_alerts?.toString() ?? "--",
+          change: -8.2,
+          sparklineData: [
+            280, 275, 268, 260, 255, 252, 248, 247, 246, 247, 248, 247,
+          ],
+          accentColor: "#EF4444",
+        },
+        {
+          icon: Shield,
+          title: "Critical Threats",
+          value: data.critical_threats?.toString() ?? "--",
+          change: -15.3,
+          sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
+          accentColor: "#F97316",
+        },
+        {
+          icon: Activity,
+          title: "Anomaly Detection Rate",
+          value: `${data.anomaly_detection_rate ?? "--"}%`,
+          change: 2.1,
+          sparklineData: [
+            3.8, 3.9, 4.0, 4.1, 4.0, 4.1, 4.2, 4.3, 4.2, 4.2, 4.1, 4.2,
+          ],
+          accentColor: "#F59E0B",
+        },
+        {
+          icon: Target,
+          title: "Model Accuracy",
+          value: `${data.model_accuracy ?? "--"}%`,
+          change: 0.3,
+          sparklineData: [
+            95.8, 96.0, 96.2, 96.3, 96.4, 96.5, 96.6, 96.7, 96.8, 96.8, 96.9,
+            96.8,
+          ],
+          accentColor: "#10B981",
+        },
+        {
+          icon: Heart,
+          title: "System Health Score",
+          value: "98/100",
+          change: 1.0,
+          sparklineData: [96, 96, 97, 97, 98, 98, 98, 97, 98, 98, 98, 98],
+          accentColor: "#10B981",
+        },
+      ]
+    : [];
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-red-400">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -96,7 +109,9 @@ export default function Dashboard() {
       </div>
 
       <div>
-        <span>{connected ? "Live" : "Reconnecting..."}</span>
+        <span className="text-white">
+          {connected ? "Live" : "Reconnecting..."}
+        </span>
         {events.map((event) => (
           <div key={event.id} className="bg-gray-800 p-4 rounded-lg">
             <h3 className="text-lg font-semibold text-white">{event.title}</h3>
