@@ -103,41 +103,44 @@ export default function Dashboard() {
 
       {/* Top Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {statCardsData.map((card, index) => (
-          <StatCard key={index} {...card} />
-        ))}
+        {loading
+          ? Array(6)
+              .fill(0)
+              .map((_, i) => (
+                <div
+                  key={i}
+                  className="h-32 bg-gray-800 rounded-lg animate-pulse"
+                />
+              ))
+          : statCardsData.map((card, index) => (
+              <StatCard key={index} {...card} />
+            ))}
       </div>
 
-      <div>
-        <span className="text-white">
-          {connected ? "Live" : "Reconnecting..."}
-        </span>
-        {events.map((event) => (
-          <div key={event.id} className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-white">{event.title}</h3>
-            <p className="text-gray-400">{event.description}</p>
-          </div>
-        ))}
+      {/* Live Feed */}
+      <div className="flex items-center gap-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-400 animate-bounce"}`} />
+            <span className="text-gray-400">{connected ? "Live feed connected" : "Reconnecting..."}</span>
       </div>
 
       {/* Threat Level & Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ThreatLevelIndicator
-          threatScore={73}
-          level="High"
-          lastUpdated="2 mins ago"
+          threatScore={data?.threat_level ?? 0}
+          level={data?.threat_level >= 75 ? "Critical" : data?.threat_level >= 50 ? "High" : "Medium"}
+          lastUpdated="Just now"
         />
-        <AlertsChart />
+        <AlertsChart data={data?.severity_breakdown}/>
         <SystemPerformancePanel />
       </div>
 
       {/* Log Activity Chart */}
-      <ThreatDetectionTimeline />
+      <ThreatDetectionTimeline data={data?.hourly_threat_data}/>
 
       {/* Attack Sources & AI Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopAttackSourcesChart />
-        <AIAnalysisPanel />
+        <TopAttackSourcesChart data={data?.top_attack_sources}/>
+        <AIAnalysisPanel data={data?.ai_summary}/>
       </div>
 
       {/* Footer */}
