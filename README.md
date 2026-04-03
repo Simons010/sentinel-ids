@@ -56,6 +56,6 @@
 
 ## API Documentation
 
-- `POST //api/ingest/`: Ingest log data (JSON).
+- `POST /api/ingest/`: Ingest log data (JSON).
 - `GET /api/alerts/`: Get list of security alerts.
 - `GET /api/dashboard/stats/`: Get aggregated statistics.
