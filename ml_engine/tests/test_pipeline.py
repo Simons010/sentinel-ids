@@ -14,6 +14,7 @@ from ml_engine.preprocessing.cleaner import DataCleaner
 from ml_engine.preprocessing.feature_extractor import FeatureExtractor
 from ml_engine.detection.rule_based import RuleBasedDetector
 from ml_engine.nlp.AI_analyzer import AIAnalyzer
+from ml_engine.models.train_initial import train_initial_model
 
 class TestMLEngine(unittest.TestCase):
     def setUp(self):
@@ -52,14 +53,15 @@ class TestMLEngine(unittest.TestCase):
         self.assertEqual(len(detector.detect(normal_log)), 0)
         print("RuleBasedDetector passed.")
 
-    @patch('google.generativeai.GenerativeModel')
-    @patch('google.generativeai.configure')
-    def test_ai_analyzer_format(self, mock_configure, mock_model_class):
+    @patch('google.genai.Client')
+    def test_ai_analyzer_format(self, mock_client_class):
         print("\nTesting AI Analyzer (Gemini) JSON parsing...")
         
-        # Mock the model instance and its generate_content method
-        mock_model_instance = MagicMock()
-        mock_model_class.return_value = mock_model_instance
+        # Mock the client instance, models, and generate_content
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+        mock_models = MagicMock()
+        mock_client_instance.models = mock_models
         
         mock_response = MagicMock()
         mock_content = {
@@ -69,7 +71,7 @@ class TestMLEngine(unittest.TestCase):
             "explanation": "Detected SQL logic manipulation."
         }
         mock_response.text = json.dumps(mock_content)
-        mock_model_instance.generate_content.return_value = mock_response
+        mock_models.generate_content.return_value = mock_response
         
         analyzer = AIAnalyzer(api_key="test_key")
         result = analyzer.analyze_log({'message': "UNION SELECT"})
@@ -77,6 +79,18 @@ class TestMLEngine(unittest.TestCase):
         self.assertTrue(result['suspicious'])
         self.assertEqual(result['attack_type'], "SQL Injection")
         print("AI Analyzer passed.")
+
+    @patch('pandas.read_csv')
+    @patch('builtins.print')
+    def test_train_initial_model_missing_dataset(self, mock_print, mock_read_csv):
+        print("\nTesting train_initial_model missing dataset handling...")
+        mock_read_csv.side_effect = FileNotFoundError()
+
+        result = train_initial_model('invalid/path.csv', 'model.pkl')
+
+        self.assertIsNone(result)
+        mock_print.assert_any_call("Error: Dataset not found at invalid/path.csv")
+        print("train_initial_model missing dataset handling passed.")
 
 if __name__ == '__main__':
     unittest.main()
