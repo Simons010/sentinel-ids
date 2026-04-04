@@ -276,7 +276,7 @@ class LogUploadView(APIView):
             upload.status = "failed"
             upload.error_message = str(e)
             upload.save()
-            return Response({"error": "Failed to process file", "details": str(e)}, status=500)
+            return Response({"error": "Failed to process file"}, status=500)
         
         return Response(UploadedFileSerializer(upload).data, status=201)
     
