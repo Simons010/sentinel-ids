@@ -88,6 +88,7 @@ export function Sidebar({ isCollapsed }) {
         <button
           className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg text-gray-400 hover:bg-[#1E293B] hover:text-white transition-all`}
           title={isCollapsed ? "Logout" : ""}
+          aria-label="Logout"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           {!isCollapsed && (

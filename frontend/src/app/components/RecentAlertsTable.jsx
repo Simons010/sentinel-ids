@@ -203,7 +203,10 @@ export function RecentAlertsTable() {
                   </span>
                 </td>
                 <td className="py-3 px-4">
-                  <button className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors">
+                  <button
+                    className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                    aria-label={`View alert ${alert.id}`}
+                  >
                     <Eye className="w-4 h-4 text-[#22D3EE]" />
                   </button>
                 </td>
@@ -217,19 +220,35 @@ export function RecentAlertsTable() {
       <div className="flex items-center justify-between mt-4">
         <p className="text-sm text-gray-400">Showing 6 of 247 alerts</p>
         <div className="flex items-center gap-2">
-          <button className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors">
+          <button
+            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors"
+            aria-label="Previous page"
+          >
             Previous
           </button>
-          <button className="px-3 py-1 bg-[#22D3EE] rounded text-sm text-white">
+          <button
+            className="px-3 py-1 bg-[#22D3EE] rounded text-sm text-white"
+            aria-label="Page 1"
+            aria-current="page"
+          >
             1
           </button>
-          <button className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors">
+          <button
+            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors"
+            aria-label="Page 2"
+          >
             2
           </button>
-          <button className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors">
+          <button
+            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors"
+            aria-label="Page 3"
+          >
             3
           </button>
-          <button className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors">
+          <button
+            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors"
+            aria-label="Next page"
+          >
             Next
           </button>
         </div>

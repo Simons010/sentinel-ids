@@ -165,7 +165,10 @@ export function ReportsHistoryTable() {
                   </span>
                 </td>
                 <td className="py-4 px-4 text-right">
-                  <button className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE] bg-opacity-10 text-[#22D3EE] rounded-lg hover:bg-opacity-20 transition-colors">
+                  <button
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE] bg-opacity-10 text-[#22D3EE] rounded-lg hover:bg-opacity-20 transition-colors"
+                    aria-label={`Download report ${report.name}`}
+                  >
                     <Download className="w-4 h-4 text-white" />
                     <span className="text-sm font-medium text-white">
                       Download
