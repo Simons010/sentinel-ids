@@ -2,7 +2,9 @@ import os
 
 from django.shortcuts import render
 from django.db.models import Count, Max
+from django.db.models.functions import TruncDate, ExtractHour
 from django.utils import timezone
+from collections import defaultdict
 from django.conf import settings
 
 from rest_framework import generics, status
@@ -206,15 +208,24 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
+        # ⚡ Bolt Optimization: Replace 168 queries (7 days * 24 hrs) with a single query
+        # and O(1) dictionary lookups in memory to drastically improve performance.
+        hourly_counts = (
+            alerts
+            .annotate(date=TruncDate('created_at'), hour=ExtractHour('created_at'))
+            .values('date', 'hour')
+            .annotate(count=Count('id'))
+        )
+
+        count_map = defaultdict(int)
+        for item in hourly_counts:
+            count_map[(str(item['date']), item['hour'])] = item['count']
+
         heatmap = []
         for days_offset in range(7):
-            day = timezone.now() - timedelta(days=6 - days_offset)
+            day = (timezone.now() - timedelta(days=6 - days_offset)).date()
             for hour in range(24):
-                dt = timezone.datetime.combine(day, timezone.datetime.min.time()).replace(hour=hour)
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
+                count = count_map[(str(day), hour)]
                 heatmap.append({"day": str(day), "hour": hour, "count": count})
         
         # Live feed (last 20 alerts)   
