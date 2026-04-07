@@ -1,5 +1,5 @@
 from django.urls import path
-from app.api.views import AlertListView, AnalyticsView, DashboardStatsView, LogIngestView, LogUploadView, NetworkStatsView, ReportView, SettingsView
+from app.api.views import AlertListView, AnalyticsView, DashboardStatsView, LogIngestView, LogUploadView, NetworkStatsView, ReportView, SettingsView, ThreatsStatsView
 
 urlpatterns = [
     path('ingest/', LogIngestView.as_view(), name='log-ingestion'),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('analytics/', AnalyticsView.as_view(), name='analytics'),
     path('reports/', ReportView.as_view(), name= 'reports'),
     path('settings/', SettingsView.as_view(), name= 'settings'),
+    path("threats/", ThreatsStatsView.as_view(), name="threats")
 ]

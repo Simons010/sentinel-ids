@@ -24,7 +24,7 @@ from ml_engine.normalization import normalizer
 
 correlator = BatchCorrelator()
 
-class LogIngestView(APIView): 
+class LogIngestView(APIView):
     
     def post(self, request): 
 
@@ -76,18 +76,18 @@ class LogIngestView(APIView):
     
 class AlertListView(generics.ListAPIView):
     
-    queryset = Alert.objects.all().order_by("-created_at")
     serializer_class = AlertSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = PageNumberPagination 
     
     def get_queryset(self):
-
         queryset = Alert.objects.all().order_by("-created_at")
-
         severity = self.request.query_params.get("severity")
+        search = self.request.query_params.get("search")
 
         if severity:
             queryset = queryset.filter(severity=severity)
+        if search: 
+            queryset = queryset.filter(attack_type__icontains=search)
 
         return queryset 
 
@@ -190,6 +190,59 @@ class DashboardStatsView(APIView):
             "severity": latest.severity,
             "confidence": latest.log.ml_score if latest.log else 0,
         }
+
+# Threats Page
+class ThreatsStatsView(APIView):
+    def get(self, request):
+        alerts = Alert.objects.all()
+        last_24h = timezone.now() - timedelta(hours=24)
+        alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
+        
+        #stats cards
+        active_alerts = alerts.filter(severity__in=["critical", "high", "medium", "low"]).count()
+        critical = alerts.filter(severity="critical").count()
+        medium = alerts.filter(severity="medium").count()
+          
+        # Top threat vectors - group by attack_type, count,assign severity
+        top_vectors = list(
+            alerts.values("attack_type")
+            .annotate(count=Count("attack_type"))
+            .order_by("-count")[:5]
+        )
+        
+        # Severity breakdown for pie chart
+        severity_breakdown = {
+            s: alerts_24h.filter(severity=s).count()
+            for s in ["critical", "high", "medium", "low", "informational"]
+        }
+        
+        # Threat level score
+        total = alerts_24h.count() or 1
+        crit_count = alerts_24h.filter(severity="critical").count()
+        threat_level = min(100, int((crit_count / total) * 100) + 30)
+        
+        # AI summary - latest alert with ai analysis
+        latest = alerts.order_by("created_at").first()
+        ai_summary = None
+        if latest:
+            ai_summary = {
+                "result": latest.attack_type,
+                "description": latest.description,
+                "severity": latest.severity,
+                "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
+            }
+            
+        return Response({
+            "active_threats": active_alerts,
+            "critical_threats": critical,
+            "medium_priority": medium,
+            "blocked_attacks": alerts.filter(severity__in=["critical", "high"]).count(),
+            "threat_level": threat_level,
+            "severity_breakdown": severity_breakdown,
+            "top_threat_vectors": top_vectors,
+            "ai_summary": ai_summary,
+        })
+        
 
 # Network Page
 class NetworkStatsView(APIView):
