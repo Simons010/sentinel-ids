@@ -1,0 +1,3 @@
+## 2025-04-07 - [Django Views N+1 Queries: Date and Hour loops]
+**Learning:** Looping over `days` and `hours` inside a view function and performing `.count()` operations translates directly to $O(\text{days} \times \text{hours})$ individual database queries. In `NetworkStatsView.heatmap` this translated to 168 synchronous queries blocking the response.
+**Action:** Always replace programmatic date/time iteration loops that query the database with a single query using Django's database functions `TruncDate` and `ExtractHour` to `annotate` and `values()`, pushing the heavy lifting and aggregation down to the database level. Map the database results into memory to reconstruct the expected output format using O(1) lookups.
