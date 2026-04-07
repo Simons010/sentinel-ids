@@ -9,8 +9,9 @@ export function RecentAlertsTable({
   search,
   setSearch,
 }) {
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalAlerts / PAGE_SIZE);
+  const currentPage = Number(page) || 1;
 
   // Map backend field names to display fields
   const mapped = alerts.map((a) => ({
@@ -159,30 +160,28 @@ export function RecentAlertsTable({
         </p>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
+            onClick={() => setPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
             className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
           >
             Previous
           </button>
-          {Array.from({ length: Math.min(totalPages, 2) }, (_, i) => i + 1).map(
-            (p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`px-3 py-1 rounded text-sm ${
-                  page === p
-                    ? "bg-[#22D3EE] text-white"
-                    : "bg-[#0F172A] border border-[#334155] text-white hover:border-[#22D3EE]"
-                } transition-colors`}
-              >
-                {p}
-              </button>
-            ),
-          )}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={`px-3 py-1 rounded text-sm ${
+                currentPage === p
+                  ? "bg-[#22D3EE] text-white"
+                  : "bg-[#0F172A] border border-[#334155] text-white hover:border-[#22D3EE]"
+              } transition-colors`}
+            >
+              {p}
+            </button>
+          ))}
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
+            onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage >= totalPages}
             className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
           >
             Next

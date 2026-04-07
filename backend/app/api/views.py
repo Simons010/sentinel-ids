@@ -24,6 +24,12 @@ from ml_engine.normalization import normalizer
 
 correlator = BatchCorrelator()
 
+
+class AlertPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
 class LogIngestView(APIView):
     
     def post(self, request): 
@@ -77,7 +83,7 @@ class LogIngestView(APIView):
 class AlertListView(generics.ListAPIView):
     
     serializer_class = AlertSerializer
-    pagination_class = PageNumberPagination 
+    pagination_class = AlertPagination
     
     def get_queryset(self):
         queryset = Alert.objects.all().order_by("-created_at")
