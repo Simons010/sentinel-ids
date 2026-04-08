@@ -9,6 +9,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 
 from datetime import timedelta
 
@@ -25,6 +26,7 @@ from ml_engine.normalization import normalizer
 correlator = BatchCorrelator()
 
 class LogIngestView(APIView): 
+    permission_classes = [IsAuthenticated]
     
     def post(self, request): 
 
@@ -75,6 +77,7 @@ class LogIngestView(APIView):
     
     
 class AlertListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     
     queryset = Alert.objects.all().order_by("-created_at")
     serializer_class = AlertSerializer
@@ -93,6 +96,7 @@ class AlertListView(generics.ListAPIView):
 
 # Dashboard
 class DashboardStatsView(APIView): 
+    permission_classes = [IsAuthenticated]
     """
     Return aggregated statistics for the dashboard.
     """
@@ -193,6 +197,8 @@ class DashboardStatsView(APIView):
 
 # Network Page
 class NetworkStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         last_7d = timezone.now() - timedelta(days=7)
         alerts = Alert.objects.filter(created_at__gte=last_7d)
@@ -240,6 +246,8 @@ class NetworkStatsView(APIView):
         
 # Log Upload Page
 class LogUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         file = request.FILES.get("file")
         if not file:
@@ -321,6 +329,8 @@ class LogUploadView(APIView):
     
 # Analytics Page
 class AnalyticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         logs = NetworkLog.objects.all()
         threshold = 0.5
@@ -377,6 +387,8 @@ class AnalyticsView(APIView):
         
 # Reports Page
 class ReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
@@ -429,6 +441,8 @@ class ReportView(APIView):
     
 # Settings Page
 class SettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         settings_obj, _ = SystemSetting.objects.get_or_create(
             user = request.user if request.user.is_authenticated else None
