@@ -1,0 +1,3 @@
+## 2026-03-05 - [Missing Focus States & Missing Context for Interactive Custom Icons]
+**Learning:** Found that custom interactive elements (like icon-only buttons for toggling sidebars and accessing notifications) in this app often lack keyboard focus indicators and ARIA labels. Because standard Tailwind `focus:` states may not trigger uniformly or correctly signal keyboard-only navigation without `focus-visible`, some users might miss them entirely.
+**Action:** Next time when encountering custom icons or buttons, enforce `focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]` for keyboard accessibility, add screen-reader context using `aria-label`, and hide purely decorative children icons with `aria-hidden="true"`.
