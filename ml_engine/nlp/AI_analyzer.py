@@ -58,7 +58,7 @@ class AIAnalyzer:
 
         try:
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash",  
+                model="gemini-3.1-flash-lite-preview",  #gemini-2.5-flash, gemini-3.1-flash-lite-preview, 
                 contents=prompt,
             )
             result_text = response.text

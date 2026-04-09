@@ -7,15 +7,27 @@ import {
   Tooltip,
 } from "recharts";
 
-const data = [
-  { name: "Critical", value: 12, color: "#EF4444" },
-  { name: "High", value: 28, color: "#F97316" },
-  { name: "Medium", value: 45, color: "#F59E0B" },
-  { name: "Low", value: 89, color: "#10B981" },
-  { name: "Informational", value: 156, color: "#22D3EE" },
-];
+const COLORS = {
+  Critical: "#EF4444",
+  High: "#F97316",
+  Medium: "#F59E0B",
+  Low: "#10B981",
+  Informational: "#22D3EE",
+};
 
-export function AlertsChart() {
+export function AlertsChart({ data }) {
+  const chartData = data
+    ? Object.entries(data).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
+        color: COLORS[name.charAt(0).toUpperCase() + name.slice(1)] ?? "#888",
+      }))
+    : Object.entries(COLORS).map(([name]) => ({
+        name,
+        value: 0,
+        color: COLORS[name],
+      }));
+
   return (
     <div className="bg-[#1E293B] rounded-xl p-6 border border-[#334155]">
       <h3 className="text-lg font-semibold text-white mb-4">
@@ -26,7 +38,7 @@ export function AlertsChart() {
         <ResponsiveContainer width="100%" height={320}>
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               innerRadius={60}
@@ -34,7 +46,7 @@ export function AlertsChart() {
               paddingAngle={2}
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>

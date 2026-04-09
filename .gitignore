@@ -60,6 +60,7 @@ htmlcov/
 
 # Logs
 *.log
+test_logs.txt 
 
 # Secrets / keys
 *.key

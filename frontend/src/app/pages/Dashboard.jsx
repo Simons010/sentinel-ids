@@ -119,28 +119,38 @@ export default function Dashboard() {
 
       {/* Live Feed */}
       <div className="flex items-center gap-2 text-sm">
-            <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-400 animate-bounce"}`} />
-            <span className="text-gray-400">{connected ? "Live feed connected" : "Reconnecting..."}</span>
+        <div
+          className={`w-2 h-2 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-400 animate-bounce"}`}
+        />
+        <span className="text-gray-400">
+          {connected ? "Live feed connected" : "Reconnecting..."}
+        </span>
       </div>
 
       {/* Threat Level & Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ThreatLevelIndicator
           threatScore={data?.threat_level ?? 0}
-          level={data?.threat_level >= 75 ? "Critical" : data?.threat_level >= 50 ? "High" : "Medium"}
+          level={
+            data?.threat_level >= 75
+              ? "Critical"
+              : data?.threat_level >= 50
+                ? "High"
+                : "Medium"
+          }
           lastUpdated="Just now"
         />
-        <AlertsChart data={data?.severity_breakdown}/>
+        <AlertsChart data={data?.severity_breakdown} />
         <SystemPerformancePanel />
       </div>
 
       {/* Log Activity Chart */}
-      <ThreatDetectionTimeline data={data?.hourly_threat_data}/>
+      <ThreatDetectionTimeline data={data?.hourly_threat_data} />
 
       {/* Attack Sources & AI Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopAttackSourcesChart data={data?.top_attack_sources}/>
-        <AIAnalysisPanel data={data?.ai_summary}/>
+        <TopAttackSourcesChart data={data?.top_attack_sources} />
+        <AIAnalysisPanel data={data?.ai_summary} />
       </div>
 
       {/* Footer */}

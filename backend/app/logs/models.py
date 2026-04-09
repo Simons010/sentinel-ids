@@ -44,7 +44,7 @@ class UploadedFile(models.Model):
     file = models.FileField(upload_to="log_uploads/")
     filename = models.CharField(max_length=255)
     file_size = models.BigIntegerField()
-    upload_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     total_logs = models.IntegerField(default=0)
     valid_logs = models.IntegerField(default=0)
