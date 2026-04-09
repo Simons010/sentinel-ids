@@ -1,0 +1,3 @@
+## 2026-02-11 - Explicit ARIA labeling for icon-only buttons
+**Learning:** Combining explicit ARIA labeling for icon-only buttons with robust keyboard focus states (`focus-visible`) is essential for accessibility in this codebase, specifically with Tailwind CSS. Screen readers can fail to correctly parse purely visual cues like Lucide icons, making interactive elements like the notification bell and sidebar toggle difficult to interpret without `aria-label` and `aria-hidden="true"` applied appropriately.
+**Action:** Always ensure icon-only buttons include an `aria-label` attribute and the underlying decorative icon has `aria-hidden="true"`. Furthermore, provide a clear visual indicator for keyboard navigation via `focus-visible` classes.
