@@ -1,14 +1,14 @@
 import re
 
-IP_PATTERN = r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' 
-PORT_PATTERN = r'port\s+(\d+)'
+IP_PATTERN = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
+PORT_PATTERN = re.compile(r'port\s+(\d+)')
 
 class LogEnricher:
     def enrich(self, log):
         message = log["message"]
         
-        ips = re.findall(IP_PATTERN, message)
-        ports = re.findall(PORT_PATTERN, message)
+        ips = IP_PATTERN.findall(message)
+        ports = PORT_PATTERN.findall(message)
         
         return{
             **log,
