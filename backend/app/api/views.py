@@ -206,15 +206,19 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
+        # ⚡ Bolt Optimization: Replacing 168 N+1 .count() queries with a single database aggregation query
+        # using .values().annotate() and an empty .order_by() to prevent default ordering interference.
+        # This reduces DB load and significantly improves endpoint response time.
         heatmap = []
+
+        aggregated = alerts.values('created_at__date', 'created_at__hour').annotate(count=Count('id')).order_by()
+        count_map = {(item['created_at__date'], item['created_at__hour']): item['count'] for item in aggregated}
+
         for days_offset in range(7):
             day = timezone.now() - timedelta(days=6 - days_offset)
             for hour in range(24):
                 dt = timezone.datetime.combine(day, timezone.datetime.min.time()).replace(hour=hour)
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
+                count = count_map.get((day.date(), hour), 0)
                 heatmap.append({"day": str(day), "hour": hour, "count": count})
         
         # Live feed (last 20 alerts)   
