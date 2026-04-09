@@ -34,7 +34,7 @@ class LogIngestView(APIView):
     
     def post(self, request): 
 
-        serializer = NetworkLogSerializer(data=request.data, many=isinstance(request.data, list))
+        serializer = NetworkLogSerializer(data=request.data)
 
         if serializer.is_valid():
 
@@ -185,9 +185,9 @@ class DashboardStatsView(APIView):
                 "ai_summary": self._get_ai_summary(alerts_24h),
             }
         )
-        
+        p
     def _get_ai_summary(self, alerts_qs):
-        latest = alerts_qs.order_by("-created_at").first()
+        latest = Alert.objects.all().order_by("-created_at").first()
         if not latest:
             return None
         return {

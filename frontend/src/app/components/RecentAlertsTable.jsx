@@ -29,7 +29,7 @@ export function RecentAlertsTable({
 
   const getSeverityColor = (s) =>
     ({
-      Critical: "bg-[#EF4444] text-white",
+      Critical: "bg-red-700 text-white uppercase",
       High: "bg-[#F97316] text-white",
       Medium: "bg-[#F59E0B] text-white",
       Low: "bg-[#10B981] text-white",

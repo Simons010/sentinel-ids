@@ -28,7 +28,7 @@ class UploadedFileAdmin(admin.ModelAdmin):
     list_display = (
         'filename', 
         'file_size', 
-        'upload_at', 
+        'uploaded_at', 
         'status', 
         'total_logs', 
         'valid_logs', 
