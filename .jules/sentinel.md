@@ -1,0 +1,4 @@
+## 2025-02-14 - Unauthenticated API Endpoints in DRF
+**Vulnerability:** All DRF API endpoints in `backend/app/api/views.py` (e.g., LogIngestView, AlertListView, AnalyticsView, etc.) lacked explicit `permission_classes`. Because there was no default permission configuration set in the `REST_FRAMEWORK` settings, the views were implicitly publicly accessible, leading to a critical authorization bypass issue.
+**Learning:** In Django REST Framework, unless explicitly configured in `settings.REST_FRAMEWORK['DEFAULT_PERMISSION_CLASSES']` or on the individual class-based view itself, `APIView` subclasses allow public access (AllowAny).
+**Prevention:** Always set an explicit `permission_classes = [IsAuthenticated]` (or an appropriate permission class) on all API views. Additionally, consider setting `DEFAULT_PERMISSION_CLASSES` to `IsAuthenticated` in the settings to enforce a "secure by default" posture.
