@@ -256,46 +256,105 @@ class NetworkStatsView(APIView):
     def get(self, request):
         last_7d = timezone.now() - timedelta(days=7)
         alerts = Alert.objects.filter(created_at__gte=last_7d)
+        all_alerts = Alert.objects.all()
         
-        # Geo data
+        # Stat cards
+        unique_ips = NetworkLog.objects.exclude(src_ip=None).values("src_ip").distinct().count()
+        network_events = NetworkLog.objects.filter(created_at__gte=last_7d).count()
+        
+        # Top attack sources 
         top_sources = list(
-            alerts.exclude(log__src_ip=None)
+            all_alerts.exclude(log__src_ip=None)
             .values("log__src_ip")
-            .annotate(count=Count("id"), risk=Max("severity_score"))
-            .order_by("-count")[:10]
+            .annotate(
+                count=Count("id"), 
+                max_score=Max("severity_score"))
+            .order_by("-count")[:5]
         )
         
         # Heatmap data (hourly for last 7 days)
         heatmap = []
         for days_offset in range(7):
-            day = timezone.now() - timedelta(days=6 - days_offset)
+            day = (timezone.now() - timedelta(days=6 - days_offset)).date()
+            day_row = []
             for hour in range(24):
-                dt = timezone.datetime.combine(day, timezone.datetime.min.time()).replace(hour=hour)
                 count = alerts.filter(
                     created_at__date=day,
                     created_at__hour=hour
                 ).count()
-                heatmap.append({"day": str(day), "hour": hour, "count": count})
+                day_row.append({count})
+            heatmap.append({
+                "day": day.strftime("%a"),
+                "date": str(day),
+                "hours": day_row
+            })
+        # Heatmap summary stats
+        all_hourly = [
+            h for row in heatmap 
+            for h in row["hours"]
+            ]
+        peak_hour_attacks = max(all_hourly) if all_hourly else 0
+        total_weekly = sum(all_hourly)
+        
+        # Find most active hour across all days
+        hour_totals = [
+            sum(row["hours"][h] for row in heatmap)
+            for h in range(24)
+        ]
+        most_active_hour = hour_totals.index(max(hour_totals)) if hour_totals else 0
+        
+        # Geo distribution (group by src_ip with counts)
+        geo_sources = list(
+            all_alerts.exclude(log__src_ip=None)
+            .values("log__src_ip")
+            .annotate(count=Count("id"), risk=Max("severity_score"))
+            .order_by("-count")[:18]
+        )
         
         # Live feed (last 20 alerts)   
-        recent = alerts.order_by("-created_at")[:20]
-        live_feed = [
-            f"{a.severity.capitalize()}: {a.attack_type} from {a.log.src_ip or 'unknown'} at {a.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-            for a in recent if a.log
-        ]
+        recent = Alert.objects.select_related("log").order_by("-created_at")[:20]
+        live_feed = []
+        for a in recent:
+            if a.log:
+                live_feed.append({
+                    "id": a.id,
+                    "text": f"{a.attack_type} from {a.log.src_ip or 'unknown'} ",
+                    "severity": a.severity,
+                    "src_ip": str(a.log.src_ip) if a.log.src_ip else None,
+                    "timestamp": a.created_at.isoformat(),
+                })
         
-        # Summary stats
-        blocked_ips = NetworkLog.objects.exclude(src_ip=None).values("src_ip").distinct().count()
-        countries_monitored = 20 # Placeholder for actual geo data processing
+        # Severity breakdown for geo map stats
+        critical_sources = sum(
+            1 for s in geo_sources if s["risk"] >= 4
+        )
+        high_sources = sum(
+            1 for s in geo_sources if s["risk"] == 3
+        )
         
         return Response({
-            "countries_monitored": countries_monitored,
-            "attack_origins": top_sources.__len__(),
-            "network_events": Alert.objects.filter(created_at__gte=last_7d).count(),
+            # stat cards
+            "countries_monitored": 142,  # placeholder for actual geo count
+            "attack_origins": unique_ips,
+            "network_events": network_events,
+            "traffic_analyzed": f"{round(network_events * 0.0007, 1)} GB",
+            
+            # Components
             "top_attack_sources": top_sources,
             "heatmap": heatmap,
+            "heatmap_summary": {
+                "peak_hour_attacks": peak_hour_attacks,
+                "total_weekly": total_weekly,
+                "most_active_hour": f"{most_active_hour:02d}:00"
+            },
+            "geo_sources": geo_sources,
+            "geo_summary": {
+                "critical_zones": critical_sources,
+                "high_risk_zones": high_sources,
+                "total_countries": len(geo_sources),
+                "blocked_ips": unique_ips
+            },
             "live_feed": live_feed,
-            "blocked_ips": blocked_ips,
         })
         
 # Log Upload Page

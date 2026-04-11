@@ -10,6 +10,7 @@ export function useNetwork() {
     try {
       const res = await getNetworkStats();
       setData(res);
+      setError(null);
     } catch (e) {
       setError(e.friendlyMessage || "Failed to load network stats");
     } finally {
