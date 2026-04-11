@@ -116,9 +116,9 @@ export function GeographicalAttackMap({ geoSources = [], geoSummary = {} }) {
         </div>
 
         {/* Attack Points */}
-        {points.map((location, index) => {
-          const x = ((location.lng + 180) / 360) * 100;
-          const y = ((90 - location.lat) / 180) * 100;
+        {points.map((loc, index) => {
+          const x = ((loc.lng + 180) / 360) * 100;
+          const y = ((90 - loc.lat) / 180) * 100;
           const color = getSeverityColor(loc.risk);
           const size = getSeveritySize(loc.risk);
 

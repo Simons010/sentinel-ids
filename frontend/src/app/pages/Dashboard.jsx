@@ -1,5 +1,6 @@
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useLiveFeed } from "../hooks/useLiveFeed";
+import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -153,6 +154,9 @@ export default function Dashboard() {
           {connected ? "Live feed connected" : "Reconnecting..."}
         </span>
       </div>
+      <LiveActivityTicker
+        events={events.length > 0 ? events : (data?.live_feed ?? [])}
+      />
 
       {/* Threat Level & Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -176,7 +180,7 @@ export default function Dashboard() {
 
       {/* Attack Sources & AI Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopAttackSourcesChart data={data?.top_attack_sources} />
+        <TopAttackSourcesChart data={data?.top_attack_sources ?? []} />
         <AIAnalysisPanel data={data?.ai_summary} />
       </div>
 

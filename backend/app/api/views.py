@@ -109,6 +109,7 @@ class DashboardStatsView(APIView):
 
         logs_24h = NetworkLog.objects.filter(created_at__gte=last_24h)
         alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
+        all_alerts = Alert.objects.all()
         
         total_logs = NetworkLog.objects.count()
         total_alerts = Alert.objects.count()
@@ -145,9 +146,11 @@ class DashboardStatsView(APIView):
             })
         
         top_sources = list(
-            alerts_24h.exclude(log__src_ip=None)
+            all_alerts.exclude(log__src_ip=None)
             .values("log__src_ip")
-            .annotate(count=Count("log__src_ip"), max_score=Max("severity_score"))
+            .annotate(
+                count=Count("id"), 
+                max_score=Max("severity_score"))
             .order_by("-count")[:5]
         )
 
@@ -260,7 +263,7 @@ class NetworkStatsView(APIView):
         
         # Stat cards
         unique_ips = NetworkLog.objects.exclude(src_ip=None).values("src_ip").distinct().count()
-        network_events = NetworkLog.objects.filter(created_at__gte=last_7d).count()
+        network_events = NetworkLog.objects.count()
         
         # Top attack sources 
         top_sources = list(
@@ -282,7 +285,7 @@ class NetworkStatsView(APIView):
                     created_at__date=day,
                     created_at__hour=hour
                 ).count()
-                day_row.append({count})
+                day_row.append(count)
             heatmap.append({
                 "day": day.strftime("%a"),
                 "date": str(day),

@@ -91,7 +91,6 @@ export default function Threats() {
               />
             ))}
         </div>
-        <div className="h-10 bg-gray-800 rounded animate-pulse" />
         <div className="h-96 bg-gray-800 rounded-xl animate-pulse" />
         <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
       </div>
