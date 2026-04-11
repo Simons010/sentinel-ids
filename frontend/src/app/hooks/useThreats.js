@@ -33,10 +33,14 @@ export function useThreats() {
   };
 
   useEffect(() => {
+    // const interval = setInterval(fetchStats, 10000); //refresh every 10 seconds
     fetchStats();
+    // return () => clearInterval(interval);
   }, []);
   useEffect(() => {
+    // const interval = setInterval(fetch, 10000); // refresh every 10 seconds
     fetchAlerts();
+    // return () => clearInterval(interval);
   }, [page, search]);
 
   return {

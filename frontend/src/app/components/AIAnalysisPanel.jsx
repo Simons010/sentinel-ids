@@ -6,6 +6,7 @@ export function AIAnalysisPanel({ data }) {
     data?.description ?? "No recent suspicious activity detected.";
   const confidence = data?.confidence ?? 0;
   const severity = data?.severity ?? "Informational";
+  const severity_score = data?.severity_score ?? 0;
 
   const riskColor =
     severity === "critical"
@@ -35,10 +36,10 @@ export function AIAnalysisPanel({ data }) {
         </div>
         <div className="bg-[#0F172A] rounded-lg p-4 border border-[#334155]">
           <p className="text-white mb-2">
-            <span className="font-semibold">Result:</span>
+            <span className="font-semibold">Result: </span>
             {result}
           </p>
-          <p className="text-sm text-gray-400">{description}</p>
+          <span className="text-sm text-gray-400">{description}</span>
         </div>
       </div>
 
@@ -77,7 +78,7 @@ export function AIAnalysisPanel({ data }) {
         <div className="h-2 bg-[#0F172A] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${confidence}%`, backgroundColor: riskColor }}
+            style={{ width: `${severity_score}%`, backgroundColor: riskColor }}
           />
         </div>
       </div>

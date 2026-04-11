@@ -33,7 +33,7 @@ class DetectionService:
             "process": log_instance.process or "",
         }
 
-        analysis = self.engine.analyze(log_data)
+        analysis = self.engine.analyze(log_data) 
 
         log_instance.is_suspicious = analysis["is_suspicious"]
         log_instance.ml_score = analysis.get("confidence_score", 0.0)

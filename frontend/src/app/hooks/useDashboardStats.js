@@ -20,7 +20,7 @@ export function useDashboardStats() {
 
   useEffect(() => {
     fetch();
-    const interval = setInterval(fetch, 30000); // refresh every 30 seconds
+    const interval = setInterval(fetch, 10000); // refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 

@@ -194,7 +194,8 @@ class DashboardStatsView(APIView):
             "result": latest.attack_type,
             "description": latest.description,
             "severity": latest.severity,
-            "confidence": latest.log.ml_score if latest.log else 0,
+            "severity_score": round(latest.severity_score * 100/4, 1) if latest.severity_score else 0,
+            "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
         }
 
 # Threats Page
