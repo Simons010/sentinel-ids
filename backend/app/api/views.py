@@ -1,7 +1,7 @@
 import os
 
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -384,10 +384,29 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # ⚡ Bolt Optimization: Batch database queries and offload bucketing to DB
+        # This replaces 6 separate .count() queries and an O(n) Python memory loop
+        # with a single optimized aggregation query
+        agg = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+            b0=Count('id', filter=Q(ml_score__gte=0.0, ml_score__lt=0.2)),
+            b1=Count('id', filter=Q(ml_score__gte=0.2, ml_score__lt=0.4)),
+            b2=Count('id', filter=Q(ml_score__gte=0.4, ml_score__lt=0.6)),
+            b3=Count('id', filter=Q(ml_score__gte=0.6, ml_score__lt=0.8)),
+            b4=Count('id', filter=Q(ml_score__gte=0.8)),
+            anomalous=Count('id', filter=Q(is_suspicious=True)),
+            total=Count('id')
+        )
+
+        tp, tn = agg['tp'], agg['tn']
+        fp, fn = agg['fp'], agg['fn']
+        total_logs = agg['total'] or 1
+        anomalous = agg['anomalous']
+
+        # Total from confusion matrix
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -402,15 +421,7 @@ class AnalyticsView(APIView):
             .order_by("-count")[:5]
         )
         
-        # Confidence score distribution (buckets 0-20, 20-40 etc.)
-        buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
-            
-        # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        buckets = [agg['b0'], agg['b1'], agg['b2'], agg['b3'], agg['b4']]
         
         return Response({
             "accuracy": accuracy,
