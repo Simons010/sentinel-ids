@@ -438,7 +438,7 @@ class LogUploadView(APIView):
         }
     
     def get(self,request):
-        uploads = UploadedFile.objects.order_by("-upload_at")
+        uploads = UploadedFile.objects.order_by("-uploaded_at")
         return Response(UploadedFileSerializer(uploads, many=True).data)
     
 # Analytics Page
@@ -457,6 +457,32 @@ class AnalyticsView(APIView):
         precision = round(tp / (tp + fp or 1) * 100, 1)
         recall = round(tp / (tp + fn or 1) * 100, 1)
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
+        
+        last_24h = timezone.now() - timedelta(hours=24)
+        hourly_threat_data = []
+        for i in range(24):
+            hour_start = timezone.now() - timedelta(hours=24 -i)
+            hour_end = hour_start - timedelta(hours=1)
+            normal = NetworkLog.objects.filter(
+                created_at__gte=hour_start, 
+                created_at__lt=hour_end,
+                is_suspicious=False
+            ).count()
+            suspicious = NetworkLog.objects.filter(
+                created_at__gte=hour_start,
+                created_at__lt=hour_end,
+                is_suspicious=True
+            ).count()
+            confirmed = Alert.objects.filter(
+                created_at__gte=hour_start,
+                created_at__lt=hour_end,
+            ).count()
+            hourly_threat_data.append({
+                "hour": hour_start.strftime("%H:%M"),
+                "normal": normal,
+                "suspicious": suspicious,
+                "confirmed": confirmed,
+            })
         
         # Attack type distribution
         attack_dist = list(
@@ -480,6 +506,7 @@ class AnalyticsView(APIView):
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
+            "hourly_threat_data": hourly_threat_data,
             "confusion_matrix": {"tp": tp, "tn": tn, "fp": fp, "fn": fn},
             "attack_type_distribution": attack_dist,
             "anomaly_rate": round(anomalous / total_logs * 100, 2),

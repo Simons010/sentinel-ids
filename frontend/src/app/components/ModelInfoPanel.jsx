@@ -1,12 +1,30 @@
-import { Brain, Calendar, Database, GitBranch } from 'lucide-react';
+import { Brain, Calendar, Database, GitBranch } from "lucide-react";
 
-export function ModelInfoPanel() {
-  const modelInfo = [
-    { icon: Brain, label: 'Model Type', value: 'Random Forest' },
-    { icon: GitBranch, label: 'Detection Method', value: 'Supervised + Anomaly' },
-    { icon: Database, label: 'Model Version', value: 'v2.4.1' },
-    { icon: Calendar, label: 'Last Training', value: 'March 4, 2026' },
-    { icon: Database, label: 'Dataset Size', value: '2.4M samples' }
+export function ModelInfoPanel({ data }) {
+  const model_info = [
+    { icon: Brain, label: "Model Type", value: data?.type ?? "Random Forest" },
+    {
+      icon: GitBranch,
+      label: "Detection Method",
+      value: "Supervised + Anomaly",
+    },
+    {
+      icon: Database,
+      label: "Model Version",
+      value: data?.version ?? "v2.4.1",
+    },
+    {
+      icon: Calendar,
+      label: "Last Training",
+      value: data?.last_training ?? "March 4, 2026",
+    },
+    {
+      icon: Database,
+      label: "Dataset Size",
+      value: data?.dataset_size
+        ? `${data.dataset_size.toLocaleString()} samples`
+        : "--",
+    },
   ];
 
   return (
@@ -16,23 +34,30 @@ export function ModelInfoPanel() {
           <Brain className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Model Information</h3>
+          <h3 className="text-lg font-semibold text-white">
+            Model Information
+          </h3>
           <p className="text-sm text-gray-400">AI Detection Engine Details</p>
         </div>
       </div>
 
       <div className="space-y-4">
-        {modelInfo.map((info, index) => {
-          const Icon = info.icon;
+        {model_info.map((item, index) => {
+          const Icon = item.icon;
           return (
-            <div key={index} className="flex items-center justify-between p-3 bg-[#0F172A] rounded-lg">
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 bg-[#0F172A] rounded-lg"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-[#22D3EE] bg-opacity-10 rounded-lg flex items-center justify-center">
                   <Icon className="w-4 h-4 text-[#22D3EE]" />
                 </div>
-                <span className="text-gray-400 text-sm">{info.label}</span>
+                <span className="text-gray-400 text-sm">{item.label}</span>
               </div>
-              <span className="text-white font-medium text-sm">{info.value}</span>
+              <span className="text-white font-medium text-sm">
+                {item.value}
+              </span>
             </div>
           );
         })}
