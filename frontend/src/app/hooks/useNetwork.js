@@ -10,6 +10,7 @@ export function useNetwork() {
     try {
       const res = await getNetworkStats();
       setData(res);
+      setError(null);
     } catch (e) {
       setError(e.friendlyMessage || "Failed to load network stats");
     } finally {
@@ -19,7 +20,7 @@ export function useNetwork() {
 
   useEffect(() => {
     fetch();
-    const interval = setInterval(fetch, 15000); //refresh every 15 seconds
+    const interval = setInterval(fetch, 10000); //refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 

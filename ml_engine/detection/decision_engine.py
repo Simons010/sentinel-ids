@@ -70,7 +70,7 @@ class DecisionEngine:
             try:
                 print("\n Triggering AI Analysis...")
                 ai_res = self.ai_analyzer.analyze_log(log_entry)
-                result['ai_analysis'] = ai_res
+                result['ai_analysis'] = ai_res 
                 
                 if isinstance(ai_res, dict) and ai_res.get('suspicious'): 
                     result['is_suspicious'] = True
@@ -79,7 +79,7 @@ class DecisionEngine:
                         float(ai_res.get('confidence', 0))
                     )
                     result['alerts'].append(
-                        f"AI: {ai_res.get('attack_type')} - {ai_res.get('explanation')} - Conf: {ai_res.get('confidence')} \n"
+                        f"AI: {ai_res.get('attack_type')} - {ai_res.get('explanation')} \n"
                     )
                 
                 print("AI RESULT:", ai_res)

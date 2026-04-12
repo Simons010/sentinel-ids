@@ -1,5 +1,6 @@
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useLiveFeed } from "../hooks/useLiveFeed";
+import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -81,13 +82,40 @@ export default function Dashboard() {
       ]
     : [];
 
-  if (error) {
+  if (error)
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-red-400">{error}</p>
       </div>
     );
-  }
+
+  // Add this — prevents any child component accessing data before it arrives
+  if (loading)
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Security Dashboard
+          </h1>
+          <p className="text-gray-400">
+            Real-time threat monitoring and AI-powered analysis
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array(4)
+            .fill(0)
+            .map((_, i) => (
+              <div
+                key={i}
+                className="h-32 bg-gray-800 rounded-lg animate-pulse"
+              />
+            ))}
+        </div>
+        <div className="h-10 bg-gray-800 rounded animate-pulse" />
+        <div className="h-96 bg-gray-800 rounded-xl animate-pulse" />
+        <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -126,6 +154,9 @@ export default function Dashboard() {
           {connected ? "Live feed connected" : "Reconnecting..."}
         </span>
       </div>
+      <LiveActivityTicker
+        events={events.length > 0 ? events : (data?.live_feed ?? [])}
+      />
 
       {/* Threat Level & Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -149,7 +180,7 @@ export default function Dashboard() {
 
       {/* Attack Sources & AI Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopAttackSourcesChart data={data?.top_attack_sources} />
+        <TopAttackSourcesChart data={data?.top_attack_sources ?? []} />
         <AIAnalysisPanel data={data?.ai_summary} />
       </div>
 
