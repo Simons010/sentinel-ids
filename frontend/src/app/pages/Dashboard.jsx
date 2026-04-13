@@ -89,7 +89,7 @@ export default function Dashboard() {
       </div>
     );
 
-  // Add this — prevents any child component accessing data before it arrives
+  // Prevent any child component accessing data before it arrives
   if (loading)
     return (
       <div className="space-y-6">
