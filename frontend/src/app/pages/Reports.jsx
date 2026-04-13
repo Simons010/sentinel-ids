@@ -2,19 +2,17 @@ import { ReportGeneratorPanel } from "../components/ReportGeneratorPanel";
 import { ReportPreviewSection } from "../components/ReportPreviewSection";
 import { ReportsHistoryTable } from "../components/ReportsHistoryTable";
 import { ReportVisualSummary } from "../components/ReportVisualSummary";
-import { useState } from "react";
+import { useReports } from "../hooks/useReports";
 import { toast } from "sonner";
 
 export default function Reports() {
-  const [showPreview, setShowPreview] = useState(false);
-
-  const handleGenerateReport = (reportConfig) => {
-    // Simulate report generation
-    setShowPreview(true);
-    toast.success("Report generated successfully!", {
-      description: `${reportConfig.reportType} in ${reportConfig.reportFormat.toUpperCase()} format`,
-    });
-  };
+  const {
+    history,
+    historyLoading,
+    previewData,
+    isGenerating,
+    handleGenerateReport,
+  } = useReports();
 
   return (
     <div className="space-y-6">
@@ -27,25 +25,32 @@ export default function Reports() {
       </div>
 
       {/* Report Generator */}
-      <ReportGeneratorPanel onGenerateReport={handleGenerateReport} />
+      <ReportGeneratorPanel
+        onGenerateReport={handleGenerateReport}
+        isGenerating={isGenerating}
+      />
 
-      {/* Report Preview (shown after generation) */}
-      {showPreview && (
+      {/* Report Preview (only shown after generation) */}
+      {previewData && (
         <>
-          <ReportPreviewSection />
-          <ReportVisualSummary />
+          <ReportPreviewSection data={previewData} />
+          <ReportVisualSummary data={previewData} />
         </>
       )}
 
       {/* Reports History */}
-      <ReportsHistoryTable />
+      <ReportsHistoryTable history={history} loading={historyLoading} />
 
       {/* Footer */}
       <div className="mt-8 pt-6 border-t border-[#334155]">
         <div className="flex items-center justify-between text-sm text-gray-400">
           <p>© 2026 Sentinel-IDS. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <span>Last report generated: 5 minutes ago</span>
+            <span>
+              {history.length > 0
+                ? `Last report: ${new Date(history[0]?.generated_at).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+                : "No reports generated yet"}
+            </span>
             <span className="flex items-center gap-2">
               <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
               Report service active

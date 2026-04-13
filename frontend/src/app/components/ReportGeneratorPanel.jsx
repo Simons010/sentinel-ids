@@ -1,23 +1,26 @@
-import { Calendar, FileDown } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar, FileDown } from "lucide-react";
+import { useState } from "react";
 
-export function ReportGeneratorPanel({ onGenerateReport }) {
-  const [startDate, setStartDate] = useState('2026-02-01');
-  const [endDate, setEndDate] = useState('2026-03-06');
-  const [reportType, setReportType] = useState('threat-summary');
-  const [reportFormat, setReportFormat] = useState('pdf');
+export function ReportGeneratorPanel({
+  onGenerateReport,
+  isGenerating = false,
+}) {
+  const [startDate, setStartDate] = useState("2026-02-01");
+  const [endDate, setEndDate] = useState("2026-03-06");
+  const [reportType, setReportType] = useState("threat-summary");
+  const [reportFormat, setReportFormat] = useState("pdf");
 
   const reportTypes = [
-    { value: 'threat-summary', label: 'Threat Summary Report' },
-    { value: 'log-activity', label: 'Log Activity Report' },
-    { value: 'network-security', label: 'Network Security Report' },
-    { value: 'ai-detection', label: 'AI Detection Performance Report' }
+    { value: "threat-summary", label: "Threat Summary Report" },
+    { value: "log-activity", label: "Log Activity Report" },
+    { value: "network-security", label: "Network Security Report" },
+    { value: "ai-detection", label: "AI Detection Performance Report" },
   ];
 
   const reportFormats = [
-    { value: 'pdf', label: 'PDF' },
-    { value: 'csv', label: 'CSV' },
-    { value: 'json', label: 'JSON' }
+    { value: "pdf", label: "PDF" },
+    { value: "csv", label: "CSV" },
+    { value: "json", label: "JSON" },
   ];
 
   const handleGenerate = () => {
@@ -26,7 +29,7 @@ export function ReportGeneratorPanel({ onGenerateReport }) {
         startDate,
         endDate,
         reportType,
-        reportFormat
+        reportFormat,
       });
     }
   };
@@ -39,7 +42,9 @@ export function ReportGeneratorPanel({ onGenerateReport }) {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-white">Report Generator</h3>
-          <p className="text-sm text-gray-400">Configure and generate security reports</p>
+          <p className="text-sm text-gray-400">
+            Configure and generate security reports
+          </p>
         </div>
       </div>
 
@@ -116,10 +121,16 @@ export function ReportGeneratorPanel({ onGenerateReport }) {
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        className="w-fit bg-gradient-to-r from-[#22D3EE] to-[#0EA5E9] text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg hover:shadow-[#22D3EE]/30 transition-all flex items-center justify-center gap-2"
+        disabled={isGenerating}
+        className={`w-fit bg-gradient-to-r from-[#22D3EE] to-[#0EA5E9] text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg hover:shadow-[#22D3EE]/30 transition-all flex items-center justify-center gap-2 
+          ${
+            isGenerating
+              ? "bg-gray-600 cursor-not-allowed hover:shadow-none"
+              : "bg-gradient-to-r from-[#22D3EE] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#22D3EE]/30"
+          }`}
       >
         <FileDown className="w-5 h-5" />
-        Generate Report
+        {isGenerating ? "Generating Report..." : "Generate Report"}
       </button>
     </div>
   );
