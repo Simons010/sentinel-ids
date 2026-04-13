@@ -532,12 +532,18 @@ class ReportView(APIView):
         report_type = request.data.get("report_type", "threat_summary")
         fmt = request.data.get("formart", "json")
         
-        start_dt = timezone.datetime.strptime(start, "%Y-%m-%d").date()
-        end_dt = timezone.datetime.strptime(end, "%Y-%m-%d").date()
+        if not start or not end:
+            return Response({"error": "start_date and end_date are required"}, status=400)
+        
+        try:
+            start_dt = timezone.datetime.strptime(start, "%Y-%m-%d").date()
+            end_dt = timezone.datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
         
         logs = NetworkLog.objects.filter(
-            timestamp__date__gte=start_dt,
-            timestamp__date__lte=end_dt
+            created_at__date__gte=start_dt,
+            created_at__date__lte=end_dt
         )
         alerts = Alert.objects.filter(
             created_at__date__gte=start_dt,
@@ -558,6 +564,39 @@ class ReportView(APIView):
             .first()
         )
         
+        # Threat distribution for pie chart
+        threat_distribution = {
+            alerts.values("attack_type")
+            .annotate(count=Count("attack_type"))
+            .order_by("-count")[:5]
+        }
+        
+        # Weekly log activity for bar chart
+        # Split date ranges in 4 equal weeks
+        total_days = (end_dt - start_dt).days or 1
+        week_size = max(1, total_days // 4)
+        weekly_activity = []
+        for i in range(4):
+            week_start = start_dt + timezone.timedelta(days=i*week_size)
+            week_end = start_dt + timezone.timedelta(days=(i+1)*week_size)
+            count = logs.filter(
+                created_at__date__gte=week_start,
+                created_at__date__lt=week_end
+            ).count()
+            weekly_activity.append({
+                "time": f"Week {i+1}",
+                "logs": count
+            })
+            
+        # Ml accuracy for confusion matrix
+        threshold = 0.5
+        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
+        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
+        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
+        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        total_classified = tp + tn + fp + fn or 1
+        accuracy = round((tp+tn) / total_classified * 100, 1)
+        
         report = Report.objects.create(
             name = f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
             report_type = report_type,
@@ -566,11 +605,19 @@ class ReportView(APIView):
             end_date=end_dt,
             generated_by=request.user if request.user.is_authenticated else None,
             total_logs=logs.count(),
+            total_threats=alerts.count(),
             critical_threats=alerts.filter(severity="critical").count(),
             top_attack_type = top_attack["attack_type"] if top_attack else None,
         )
         
-        return Response(ReportSerializer(report).data, status=201)
+        return Response({
+            **ReportSerializer(report).data,
+            # Extra fields preview (not stored in db)
+            "top_attacking_ip": top_ip["log__src_ip"] if top_ip else None,
+            "threat_distribution": threat_distribution,
+            "weekly_activity": weekly_activity,
+            "detection_accuracy": accuracy,
+            }, status=201)
     
     def get(self, request):
         reports = Report.objects.order_by("-generated_at")

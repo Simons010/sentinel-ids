@@ -307,6 +307,7 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
             "slack_integration", "sms_alerts",
             "two_factor_auth", "auto_block_threats",
             "ip_whitelisting", "session_timeout",
-            "retention_days", "auto_archive",
+            "retention_days", "archive_location", "auto_archive",
             "ai_model_mode", "continuous_learning", "ai_sensitivity",
+            "smtp_server", "smtp_port", "smtp_username", "smtp_password",
         ]

@@ -18,6 +18,7 @@ class SystemSetting(models.Model):
     
     # Database Retention
     retention_days = models.IntegerField(default=90)
+    archive_location = models.CharField(max_length=255, default="/var/log/sentinel-ids/archives")
     auto_archive = models.BooleanField(default=True)
     
     # AI Model
@@ -28,6 +29,12 @@ class SystemSetting(models.Model):
     )
     continuous_learning = models.BooleanField(default=True)
     ai_sensitivity = models.IntegerField(default=85)  # 0-100 scale
+
+    # Email configuration
+    smtp_server = models.CharField(max_length=255, blank=True, default="")
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=255, blank=True, default="")
+    smtp_password = models.CharField(max_length=255, blank=True, default="")
     
     def __str__(self):
         return f"Settings for {self.user}" 
