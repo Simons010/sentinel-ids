@@ -2,7 +2,7 @@ import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Bell, Shield, Database, Cpu, Mail, Save } from "lucide-react";
+import { Bell, Shield, Database, Cpu, Mail, Save, Key, Users } from "lucide-react";
 import { useSettings } from "../hooks/useSettings";
 
 export default function Settings() {
@@ -12,10 +12,30 @@ export default function Settings() {
     saving,
     error,
     isDirty,
+    apiKeys,
+    teamMembers,
     setField,
     resetChanges,
     saveChanges,
+    generateApiKey,
+    revokeKey,
+    inviteMember,
+    activateMember,
   } = useSettings();
+
+  const handleGenerateApiKey = async () => {
+    const name = window.prompt("API key name", "Generated API Key");
+    if (!name) return;
+    await generateApiKey(name);
+  };
+
+  const handleInviteMember = async () => {
+    const name = window.prompt("Team member name");
+    const email = window.prompt("Team member email");
+    const role = window.prompt("Role: admin, analyst, or viewer", "viewer");
+    if (!name || !email || !role) return;
+    await inviteMember({ name, email, role: role.toLowerCase() });
+  };
 
   if (loading) {
     return <div className="h-64 bg-gray-800 rounded-lg animate-pulse" />;
@@ -259,6 +279,110 @@ export default function Settings() {
               className="bg-[#0F172A] border-[#334155] text-white"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-[#10B981]/20 rounded-lg flex items-center justify-center">
+            <Key className="w-5 h-5 text-[#10B981]" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-white">API Keys</h3>
+            <p className="text-sm text-gray-400">Manage integration API keys</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {apiKeys.length === 0 ? (
+            <p className="text-sm text-gray-400">No API keys generated yet.</p>
+          ) : (
+            apiKeys.map((apiKey) => (
+              <div
+                key={apiKey.id}
+                className="flex items-center justify-between p-4 bg-[#0F172A] rounded-lg"
+              >
+                <div>
+                  <p className="text-white font-medium">{apiKey.name}</p>
+                  <p className="text-sm text-gray-400 font-mono">{apiKey.key}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Created: {new Date(apiKey.created_at).toLocaleDateString("en-GB")}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!apiKey.is_active}
+                  onClick={() => revokeKey(apiKey.id)}
+                  className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {apiKey.is_active ? "Revoke" : "Revoked"}
+                </Button>
+              </div>
+            ))
+          )}
+          <Button
+            className="w-fit bg-[#22D3EE] hover:bg-[#22D3EE]/90 text-white"
+            onClick={handleGenerateApiKey}
+          >
+            Generate New API Key
+          </Button>
+        </div>
+      </div>
+
+      <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-[#F97316]/20 rounded-lg flex items-center justify-center">
+            <Users className="w-5 h-5 text-[#F97316]" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-white">Team Members</h3>
+            <p className="text-sm text-gray-400">Manage user access and permissions</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {teamMembers.length === 0 ? (
+            <p className="text-sm text-gray-400">No team members added yet.</p>
+          ) : (
+            teamMembers.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 bg-[#0F172A] rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center text-white font-semibold">
+                    {member.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">{member.name}</p>
+                    <p className="text-sm text-gray-400">{member.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold px-2 py-1 rounded bg-[#22D3EE]/20 text-[#22D3EE]">
+                    {member.role}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={member.status === "Active"}
+                    onClick={() => activateMember(member.id)}
+                    className="text-xs"
+                  >
+                    {member.status}
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+          <Button
+            className="w-fit bg-[#22D3EE] hover:bg-[#22D3EE]/90 text-white"
+            onClick={handleInviteMember}
+          >
+            Invite Team Member
+          </Button>
         </div>
       </div>
 
