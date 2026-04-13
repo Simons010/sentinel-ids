@@ -6,6 +6,7 @@ import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { TopAttackSourcesChart } from "../components/TopAttackSourcesChart";
 import { StatCard } from "../components/StatCard";
 import { Globe, MapPin, Activity, TrendingUp } from "lucide-react";
+import { NetworkLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Network() {
   const { data, loading, error } = useNetwork();
@@ -62,33 +63,7 @@ export default function Network() {
       </div>
     );
 
-  // Prevent any child component accessing data before it arrives
-  if (loading)
-    return (
-      <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Network Monitor
-          </h1>
-          <p className="text-gray-400">
-            Global threat visualization and network activity tracking
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array(4)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                className="h-32 bg-gray-800 rounded-lg animate-pulse"
-              />
-            ))}
-        </div>
-        <div className="h-10 bg-gray-800 rounded animate-pulse" />
-        <div className="h-96 bg-gray-800 rounded-xl animate-pulse" />
-        <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
-      </div>
-    );
+  if (loading) return <NetworkLoadingSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -102,18 +77,9 @@ export default function Network() {
 
       {/* Network Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loading
-          ? Array(4)
-              .fill(0)
-              .map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-gray-800 rounded-lg animate-pulse"
-                />
-              ))
-          : networkStatCards.map((card, index) => (
-              <StatCard key={index} {...card} />
-            ))}
+        {networkStatCards.map((card, index) => (
+          <StatCard key={index} {...card} />
+        ))}
       </div>
 
       {/* Live feed (websocket events prioritized, fall back to REST data) */}

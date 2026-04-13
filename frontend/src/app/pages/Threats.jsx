@@ -6,6 +6,7 @@ import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { StatCard } from "../components/StatCard";
 import TopThreatVectors from "../components/TopThreatVectors";
 import { AlertTriangle, Shield, Target, AlertCircle } from "lucide-react";
+import { ThreatsLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Threats() {
   const {
@@ -69,32 +70,7 @@ export default function Threats() {
       </div>
     );
 
-  // Prevent any child component accessing data before it arrives
-  if (loading)
-    return (
-      <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Threat Intelligence
-          </h1>
-          <p className="text-gray-400">
-            Comprehensive threat analysis and alert management
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array(4)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                className="h-32 bg-gray-800 rounded-lg animate-pulse"
-              />
-            ))}
-        </div>
-        <div className="h-96 bg-gray-800 rounded-xl animate-pulse" />
-        <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
-      </div>
-    );
+  if (loading) return <ThreatsLoadingSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -109,18 +85,9 @@ export default function Threats() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loading
-          ? Array(4)
-              .fill(0)
-              .map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-gray-800 rounded-lg animate-pulse"
-                />
-              ))
-          : threatStatCards.map((card, index) => (
-              <StatCard key={index} {...card} />
-            ))}
+        {threatStatCards.map((card, index) => (
+          <StatCard key={index} {...card} />
+        ))}
       </div>
 
       {/* Threat Level, Alerts Chart, Top Vectors */}

@@ -7,6 +7,7 @@ import { SettingsSaveBar } from "../components/settings/SettingsSaveBar";
 import { EmailSettingsCard } from "../components/settings/EmailSettingsCard";
 import { ApiKeysCard } from "../components/settings/ApiKeysCard";
 import { TeamMembersCard } from "../components/settings/TeamMembersCard";
+import { SettingsLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Settings() {
   const {
@@ -34,32 +35,7 @@ export default function Settings() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-gray-400">
-            Configure your security preferences and system settings
-          </p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Array(4)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                className="h-64 bg-gray-800 rounded-lg animate-pulse"
-              />
-            ))}
-        </div>
-        <div className="h-48 bg-gray-800 rounded-lg animate-pulse" />
-        <div className="h-12 max-w-md ml-auto bg-gray-800 rounded-lg animate-pulse" />
-        <div className="h-56 bg-gray-800 rounded-lg animate-pulse" />
-        <div className="h-56 bg-gray-800 rounded-lg animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <SettingsLoadingSkeleton />;
 
   return (
     <div className="space-y-6">

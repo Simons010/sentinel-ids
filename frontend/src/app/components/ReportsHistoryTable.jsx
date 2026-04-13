@@ -1,11 +1,7 @@
 import { Download, Search } from "lucide-react";
 import { useState } from "react";
 
-export function ReportsHistoryTable({
-  history = [],
-  loading = false,
-  onDownload,
-}) {
+export function ReportsHistoryTable({ history = [], onDownload }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = history.filter(
@@ -69,17 +65,7 @@ export function ReportsHistoryTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#334155]">
-            {loading ? (
-              Array(4)
-                .fill(0)
-                .map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={6} className="py-4 px-4">
-                      <div className="h-4 bg-gray-700 rounded animate-pulse" />
-                    </td>
-                  </tr>
-                ))
-            ) : filtered.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}

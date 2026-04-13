@@ -2,6 +2,7 @@ import { ReportGeneratorPanel } from "../components/ReportGeneratorPanel";
 import { ReportPreviewSection } from "../components/ReportPreviewSection";
 import { ReportsHistoryTable } from "../components/ReportsHistoryTable";
 import { ReportVisualSummary } from "../components/ReportVisualSummary";
+import { ReportsHistorySectionSkeleton } from "../components/PageLoadingSkeletons";
 import { useReports } from "../hooks/useReports";
 
 export default function Reports() {
@@ -39,11 +40,14 @@ export default function Reports() {
       )}
 
       {/* Reports History */}
-      <ReportsHistoryTable
-        history={history}
-        loading={historyLoading}
-        onDownload={handleDownloadReport}
-      />
+      {historyLoading ? (
+        <ReportsHistorySectionSkeleton />
+      ) : (
+        <ReportsHistoryTable
+          history={history}
+          onDownload={handleDownloadReport}
+        />
+      )}
 
       {/* Footer */}
       <div className="mt-8 pt-6 border-t border-[#334155]">

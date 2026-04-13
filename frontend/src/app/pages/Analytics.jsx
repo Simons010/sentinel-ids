@@ -7,6 +7,7 @@ import { AnomalyDetectionChart } from "../components/AnomalyDetectionChart";
 import { AIConfidenceChart } from "../components/AIConfidenceChart";
 import { ModelInfoPanel } from "../components/ModelInfoPanel";
 import { Target, TrendingUp, Activity, Award } from "lucide-react";
+import { AnalyticsLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Analytics() {
   const { data, loading, error } = useAnalytics();
@@ -18,26 +19,7 @@ export default function Analytics() {
       </div>
     );
 
-  if (loading)
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array(4)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                className="h-32 bg-gray-800 rounded-lg animate-pulse"
-              />
-            ))}
-        </div>
-        <div className="h-80 bg-gray-800 rounded-xl animate-pulse" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
-          <div className="h-64 bg-gray-800 rounded-xl animate-pulse" />
-        </div>
-      </div>
-    );
+  if (loading) return <AnalyticsLoadingSkeleton />;
 
   // Model Performance Metrics
   const modelMetrics = [
