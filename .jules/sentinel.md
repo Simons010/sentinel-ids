@@ -1,0 +1,6 @@
+## 2024-05-18 - Missing Authentication on API Endpoints
+**Vulnerability:** Found multiple sensitive REST API endpoints in `backend/app/api/views.py` that were lacking explicit authentication (`permission_classes = [IsAuthenticated]`). These endpoints expose system configuration, sensitive logs, alerts, dashboard statistics, threat analysis, and network metrics.
+**Learning:** In the Django backend REST Framework configuration (`backend/backend/settings.py`), there is no `DEFAULT_PERMISSION_CLASSES` fallback defined. Due to this omission, all Django REST Framework API views must explicitly declare `permission_classes = [IsAuthenticated]` (or an equivalent access control) to prevent unauthorized public access. Relying solely on a global auth middleware isn't sufficient for DRF class-based views when default API permissions are missing.
+**Prevention:**
+1. Implement a globally restrictive default permissions policy (`rest_framework.permissions.IsAuthenticated`) in `settings.py`'s `REST_FRAMEWORK` dictionary to ensure a default deny posture.
+2. Always explicitly declare authentication and authorization (`permission_classes`) on every new `APIView`, especially when exposing sensitive data or actions, instead of assuming global protections apply seamlessly to DRF APIs.
