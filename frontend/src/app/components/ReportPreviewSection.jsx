@@ -7,7 +7,27 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+function normalizeReportType(raw) {
+  const s = (raw || "threat_summary").toString().trim().toLowerCase().replace(/-/g, "_");
+  if (s === "ai_detection") return "ai_performance";
+  return s;
+}
+
 export function ReportPreviewSection({ data }) {
+  const rt = normalizeReportType(data?.report_type);
+
+  const insightLabel =
+    rt === "log_activity"
+      ? "Top event / log type"
+      : rt === "network_security"
+        ? "Top protocol / service"
+        : rt === "ai_performance"
+          ? "ML score summary"
+          : "Most common attack type";
+
+  const showUniqueSources =
+    rt === "network_security" && data?.unique_source_ips != null;
+
   const previewMetrics = [
     {
       icon: FileText,
@@ -29,14 +49,16 @@ export function ReportPreviewSection({ data }) {
     },
     {
       icon: Target,
-      label: "Most Common Attack",
+      label: insightLabel,
       value: data?.top_attack_type ?? "--",
       color: "#F97316",
     },
     {
       icon: Globe,
-      label: "Top Attacking IP",
-      value: data?.top_attacking_ip ?? "--",
+      label: showUniqueSources ? "Unique source IPs" : "Top attacking IP",
+      value: showUniqueSources
+        ? String(data.unique_source_ips)
+        : (data?.top_attacking_ip ?? "--"),
       color: "#8B5CF6",
     },
     {

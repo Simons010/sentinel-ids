@@ -37,6 +37,15 @@ def build_export_payload(report) -> dict[str, Any]:
         "threat_distribution": snap.get("threat_distribution") or [],
         "weekly_activity": snap.get("weekly_activity") or [],
         "detection_accuracy": snap.get("detection_accuracy"),
+        "distribution_title": snap.get("distribution_title"),
+        "weekly_title": snap.get("weekly_title"),
+        "suspicious_log_count": snap.get("suspicious_log_count"),
+        "clean_log_count": snap.get("clean_log_count"),
+        "unique_source_ips": snap.get("unique_source_ips"),
+        "true_positives": snap.get("true_positives"),
+        "false_positives": snap.get("false_positives"),
+        "true_negatives": snap.get("true_negatives"),
+        "false_negatives": snap.get("false_negatives"),
     }
 
 
@@ -51,8 +60,18 @@ def _csv_bytes(payload: dict[str, Any]) -> bytes:
         "top_attack_type",
         "detection_accuracy",
         "top_attacking_ip",
+        "distribution_title",
+        "weekly_title",
+        "suspicious_log_count",
+        "clean_log_count",
+        "unique_source_ips",
+        "true_positives",
+        "false_positives",
+        "true_negatives",
+        "false_negatives",
     ):
-        w.writerow([key, payload.get(key)])
+        if payload.get(key) is not None:
+            w.writerow([key, payload.get(key)])
     w.writerow([])
     w.writerow(["threat_distribution"])
     w.writerow(["attack_type", "count"])
@@ -99,14 +118,16 @@ def _build_pdf_bytes(payload: dict[str, Any]) -> bytes:
     pdf.multi_cell(0, 5, txt=_pdf_safe_text(summary))
     pdf.ln(4)
     pdf.set_font("Helvetica", style="B", size=10)
-    pdf.multi_cell(0, 6, txt="Threat distribution")
+    dist_title = payload.get("distribution_title") or "Distribution"
+    pdf.multi_cell(0, 6, txt=_pdf_safe_text(dist_title))
     pdf.set_font("Helvetica", size=10)
     for row in payload.get("threat_distribution") or []:
         line = f"  {row.get('attack_type')}: {row.get('count')}"
         pdf.multi_cell(0, 5, txt=_pdf_safe_text(line))
     pdf.ln(2)
     pdf.set_font("Helvetica", style="B", size=10)
-    pdf.multi_cell(0, 6, txt="Weekly log activity")
+    weekly_title = payload.get("weekly_title") or "Activity by period"
+    pdf.multi_cell(0, 6, txt=_pdf_safe_text(weekly_title))
     pdf.set_font("Helvetica", size=10)
     for row in payload.get("weekly_activity") or []:
         line = f"  {row.get('time')}: {row.get('logs')} logs"
@@ -148,13 +169,28 @@ def _pdf_fallback_bytes(payload: dict[str, Any]) -> bytes:
         f"Period: {payload.get('start_date')} – {payload.get('end_date')}",
         f"Total logs: {payload.get('total_logs')}",
         f"Total threats: {payload.get('total_threats')}",
-        "",
-        "Threat distribution:",
+        f"Critical: {payload.get('critical_threats')}",
+        f"Top attack / insight: {payload.get('top_attack_type')}",
+        f"Top IP: {payload.get('top_attacking_ip')}",
+        f"Detection accuracy: {payload.get('detection_accuracy')}%",
     ]
+    if payload.get("unique_source_ips") is not None:
+        lines.append(f"Unique source IPs: {payload.get('unique_source_ips')}")
+    if payload.get("suspicious_log_count") is not None:
+        lines.append(
+            f"Suspicious / clean logs: {payload.get('suspicious_log_count')} / {payload.get('clean_log_count')}"
+        )
+    for key in ("true_positives", "false_positives", "true_negatives", "false_negatives"):
+        if payload.get(key) is not None:
+            lines.append(f"{key}: {payload.get(key)}")
+    lines.append("")
+    dist_title = payload.get("distribution_title") or "Distribution"
+    lines.append(f"{dist_title}:")
     for row in payload.get("threat_distribution") or []:
         lines.append(f"  - {row.get('attack_type')}: {row.get('count')}")
     lines.append("")
-    lines.append("Weekly log activity:")
+    weekly_title = payload.get("weekly_title") or "Activity by period"
+    lines.append(f"{weekly_title}:")
     for row in payload.get("weekly_activity") or []:
         lines.append(f"  - {row.get('time')}: {row.get('logs')}")
     note = (

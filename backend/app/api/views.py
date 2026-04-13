@@ -22,7 +22,11 @@ from app.alerts.models import Alert
 from app.reports.models import Report
 from app.reports.export import render_report_file_bytes, save_report_file
 from app.reports.querysets import alerts_for_report_range, logs_for_report_range
-from app.reports.weekly import weekly_log_activity_buckets
+from app.reports.report_payload import (
+    VALID_REPORT_TYPES,
+    build_report_snapshot,
+    normalize_report_type,
+)
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 from ml_engine.normalization import normalizer
@@ -534,14 +538,20 @@ class ReportView(APIView):
     def post(self, request):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
-        report_type = request.data.get("report_type", "threat_summary")
+        report_type = normalize_report_type(
+            request.data.get("report_type", "threat_summary")
+        )
         fmt = (request.data.get("format") or "json").lower()
         if fmt not in ("pdf", "csv", "json"):
             fmt = "json"
-        report_type_aliases = {
-            "ai_detection": "ai_performance",
-        }
-        report_type = report_type_aliases.get(report_type, report_type)
+        if report_type not in VALID_REPORT_TYPES:
+            return Response(
+                {
+                    "error": "Invalid report_type",
+                    "allowed": sorted(VALID_REPORT_TYPES),
+                },
+                status=400,
+            )
         
         if not start or not end:
             return Response({"error": "start_date and end_date are required"}, status=400)
@@ -561,50 +571,10 @@ class ReportView(APIView):
         
         logs = logs_for_report_range(start_at, end_at)
         alerts = alerts_for_report_range(start_at, end_at)
-        
-        top_attack = (
-            alerts.values("attack_type")
-            .annotate(c=Count("attack_type"))
-            .order_by("-c")
-            .first()
-        )
-        top_ip = (
-            alerts.exclude(log__src_ip=None)
-            .values("log__src_ip")
-            .annotate(c=Count("id"))
-            .order_by("-c")
-            .first()
-        )
-        
-        # Threat distribution for pie chart
-        threat_distribution = list(
-            alerts.values("attack_type")
-            .annotate(count=Count("attack_type"))
-            .order_by("-count")[:5]
-        )
-        
-        # Weekly log activity: four contiguous day buckets (full range), filter by _evt datetimes
-        weekly_activity = weekly_log_activity_buckets(start_dt, end_dt, logs)
-            
-        # Ml accuracy for confusion matrix
-        threshold = 0.5
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
-        total_classified = tp + tn + fp + fn or 1
-        accuracy = round((tp+tn) / total_classified * 100, 1)
-        
-        top_attacking_ip = None
-        if top_ip and top_ip.get("log__src_ip") is not None:
-            top_attacking_ip = str(top_ip["log__src_ip"])
 
-        snapshot = {
-            "top_attacking_ip": top_attacking_ip,
-            "threat_distribution": threat_distribution,
-            "weekly_activity": weekly_activity,
-            "detection_accuracy": accuracy,
-        }
+        snapshot, overrides = build_report_snapshot(
+            report_type, logs, alerts, start_dt, end_dt
+        )
 
         report = Report.objects.create(
             name=f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
@@ -616,7 +586,7 @@ class ReportView(APIView):
             total_logs=logs.count(),
             total_threats=alerts.count(),
             critical_threats=alerts.filter(severity="critical").count(),
-            top_attack_type=top_attack["attack_type"] if top_attack else None,
+            top_attack_type=overrides.get("top_attack_type"),
             snapshot=snapshot,
         )
 
@@ -628,11 +598,8 @@ class ReportView(APIView):
 
         report.refresh_from_db()
         data = ReportSerializer(report).data
-        # Always include chart/preview fields in POST body (avoids serializer/DB JSON quirks)
-        data["top_attacking_ip"] = top_attacking_ip
-        data["threat_distribution"] = threat_distribution
-        data["weekly_activity"] = weekly_activity
-        data["detection_accuracy"] = accuracy
+        for key, value in snapshot.items():
+            data[key] = value
         return Response(data, status=201)
     
     def get(self, request):

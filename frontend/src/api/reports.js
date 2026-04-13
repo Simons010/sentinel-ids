@@ -5,6 +5,23 @@ export const generateReport = (payload) =>
 
 export const getReports = () => api.get("reports/").then((r) => r.data);
 
+function extensionFromContentType(ct) {
+  if (!ct || typeof ct !== "string") return null;
+  const c = ct.toLowerCase();
+  if (c.includes("application/pdf")) return "pdf";
+  if (c.includes("text/csv")) return "csv";
+  if (c.includes("application/json")) return "json";
+  if (c.includes("text/plain")) return "txt";
+  return null;
+}
+
+function extensionFromFormatHint(formatHint) {
+  const f = (formatHint || "json").toLowerCase();
+  if (f === "pdf") return "pdf";
+  if (f === "csv") return "csv";
+  return "json";
+}
+
 /**
  * Triggers browser download of the generated report file.
  */
@@ -15,13 +32,18 @@ export async function downloadReportFile(id, formatHint = "json") {
     });
     const blob = res.data;
 
-    const ext =
-      formatHint === "pdf" ? "pdf" : formatHint === "csv" ? "csv" : "json";
-    let filename = `sentinel_report_${id}.${ext}`;
-    const cd = res.headers["content-disposition"];
+    const ct = res.headers["content-type"] || res.headers["Content-Type"] || "";
+    const extFromCt = extensionFromContentType(ct);
+    const fallbackExt = extensionFromFormatHint(formatHint);
+    let filename = `sentinel_report_${id}.${extFromCt || fallbackExt}`;
+    const cd = res.headers["content-disposition"] || res.headers["Content-Disposition"];
     if (cd && cd.includes("filename=")) {
       const part = cd.split("filename=")[1]?.trim().replace(/^"|"$/g, "");
       if (part) filename = part;
+    } else if (extFromCt) {
+      // Backend may send .txt when PDF fallback; CORS must expose Content-Disposition,
+      // otherwise match filename extension to real Content-Type.
+      filename = `sentinel_report_${id}.${extFromCt}`;
     }
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");

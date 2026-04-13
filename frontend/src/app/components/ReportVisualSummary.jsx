@@ -14,6 +14,10 @@ import {
 const COLORS = ["#EF4444", "#F97316", "#F59E0B", "#22D3EE", "#8B5CF6"];
 
 export function ReportVisualSummary({ data }) {
+  const distributionTitle =
+    data?.distribution_title?.trim() || "Distribution";
+  const weeklyTitle = data?.weekly_title?.trim() || "Activity by period";
+
   const threatDistribution =
     data?.threat_distribution?.length > 0
       ? data.threat_distribution.map((d) => ({
@@ -27,14 +31,14 @@ export function ReportVisualSummary({ data }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Threat Distribution */}
+      {/* Distribution (type-specific title from API) */}
       <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
         <h3 className="text-lg font-semibold text-white mb-4">
-          Threat Distribution
+          {distributionTitle}
         </h3>
         {threatDistribution.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-            No threat data for this period
+            No distribution data for this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={250}>
@@ -70,14 +74,14 @@ export function ReportVisualSummary({ data }) {
         )}
       </div>
 
-      {/* Weekly Log Activity */}
+      {/* Time-bucketed activity (type-specific title from API) */}
       <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
         <h3 className="text-lg font-semibold text-white mb-4">
-          Weekly Log Activity
+          {weeklyTitle}
         </h3>
         {weeklyActivity.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-            No log activity for this period
+            No activity for this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={250}>

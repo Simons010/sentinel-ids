@@ -305,6 +305,15 @@ class ReportSerializer(serializers.ModelSerializer):
             "threat_distribution",
             "weekly_activity",
             "detection_accuracy",
+            "distribution_title",
+            "weekly_title",
+            "suspicious_log_count",
+            "clean_log_count",
+            "unique_source_ips",
+            "true_positives",
+            "false_positives",
+            "true_negatives",
+            "false_negatives",
         ):
             if key in snap:
                 data[key] = snap[key]
