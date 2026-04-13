@@ -1,0 +1,3 @@
+## 2024-04-13 - [Django AnalyticsView DB Aggregation Optimization]
+**Learning:** Using separate `.count()` calls and iterating over python-side `.values_list()` for bucketing scores on a potentially large dataset causes massive N+1 query problems and unneeded memory usage in Django apps.
+**Action:** Always combine multiple `.count()` queries and simple iterative aggregation logic into a single database `.aggregate()` call using `django.db.models.Q` and `Count(filter=...)`. This pushes the heavy lifting to the SQL database engine and dramatically reduces the number of database round trips and Python memory requirements.
