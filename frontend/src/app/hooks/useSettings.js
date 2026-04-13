@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSettings, updateSettings } from "../../api/settings";
+import {
+  getSettings,
+  updateSettings,
+  getApiKeys,
+  createApiKey,
+  revokeApiKey,
+  getTeamMembers,
+  createTeamMember,
+  updateTeamMember,
+} from "../../api/settings";
 import { toast } from "sonner";
 
 const DEFAULT_SETTINGS = {
@@ -29,14 +38,22 @@ export function useSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
 
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const data = await getSettings();
+      const [data, keys, members] = await Promise.all([
+        getSettings(),
+        getApiKeys(),
+        getTeamMembers(),
+      ]);
       const next = { ...DEFAULT_SETTINGS, ...data };
       setSettings(next);
       setInitialSettings(next);
+      setApiKeys(keys);
+      setTeamMembers(members);
       setError(null);
     } catch (e) {
       setError(e.friendlyMessage || "Failed to load settings");
@@ -86,15 +103,68 @@ export function useSettings() {
     }
   };
 
+  const generateApiKey = async (name) => {
+    try {
+      const created = await createApiKey({ name });
+      setApiKeys((prev) => [created, ...prev]);
+      toast.success("API key generated");
+    } catch (e) {
+      toast.error(e.friendlyMessage || "Failed to generate API key");
+    }
+  };
+
+  const revokeKey = async (id) => {
+    try {
+      await revokeApiKey(id);
+      setApiKeys((prev) =>
+        prev.map((k) => (k.id === id ? { ...k, is_active: false } : k)),
+      );
+      toast.success("API key revoked");
+    } catch (e) {
+      toast.error(e.friendlyMessage || "Failed to revoke API key");
+    }
+  };
+
+  const inviteMember = async ({ name, email, role }) => {
+    try {
+      const created = await createTeamMember({
+        name,
+        email,
+        role_value: role,
+        status_value: "pending",
+      });
+      setTeamMembers((prev) => [created, ...prev]);
+      toast.success("Team member invited");
+    } catch (e) {
+      toast.error(e.friendlyMessage || "Failed to invite team member");
+    }
+  };
+
+  const activateMember = async (id) => {
+    try {
+      const updated = await updateTeamMember(id, { status_value: "active" });
+      setTeamMembers((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      toast.success("Member updated");
+    } catch (e) {
+      toast.error(e.friendlyMessage || "Failed to update team member");
+    }
+  };
+
   return {
     settings,
     loading,
     saving,
     error,
+    apiKeys,
+    teamMembers,
     isDirty,
     setField,
     resetChanges,
     saveChanges,
+    generateApiKey,
+    revokeKey,
+    inviteMember,
+    activateMember,
     refetch: fetchSettings,
   };
 }
