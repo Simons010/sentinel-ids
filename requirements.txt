@@ -10,4 +10,5 @@ joblib
 google-generativeai
 channels
 channels-redis
+fpdf2>=2.7.0 
 

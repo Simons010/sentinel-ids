@@ -290,6 +290,26 @@ class ReportSerializer(serializers.ModelSerializer):
             "total_logs", "total_threats", "critical_threats", "top_attack_type",
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        snap = getattr(instance, "snapshot", None) or {}
+        if isinstance(snap, str):
+            try:
+                snap = json.loads(snap)
+            except (json.JSONDecodeError, TypeError):
+                snap = {}
+        if not isinstance(snap, dict):
+            snap = {}
+        for key in (
+            "top_attacking_ip",
+            "threat_distribution",
+            "weekly_activity",
+            "detection_accuracy",
+        ):
+            if key in snap:
+                data[key] = snap[key]
+        return data
+
     def get_file_size_display(self, obj):  # fixed — now at serializer level
         size = obj.file_size or 0
         if size < 1024:       return f"{size} B"

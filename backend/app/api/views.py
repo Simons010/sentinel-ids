@@ -1,5 +1,7 @@
+import io
 import os
 
+from django.http import FileResponse
 from django.shortcuts import render
 from django.db.models import Count, Max
 from django.utils import timezone
@@ -10,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
@@ -18,6 +20,8 @@ from app.api.serializers import AlertSerializer, NetworkLogSerializer, ReportSer
 from app.logs.models import NetworkLog, UploadedFile
 from app.alerts.models import Alert 
 from app.reports.models import Report
+from app.reports.export import render_report_file_bytes, save_report_file
+from app.reports.querysets import alerts_for_report_range, logs_for_report_range
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 from ml_engine.normalization import normalizer
@@ -530,7 +534,9 @@ class ReportView(APIView):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
         report_type = request.data.get("report_type", "threat_summary")
-        fmt = request.data.get("format", "json")
+        fmt = (request.data.get("format") or "json").lower()
+        if fmt not in ("pdf", "csv", "json"):
+            fmt = "json"
         report_type_aliases = {
             "ai_detection": "ai_performance",
         }
@@ -540,19 +546,20 @@ class ReportView(APIView):
             return Response({"error": "start_date and end_date are required"}, status=400)
         
         try:
-            start_dt = timezone.datetime.strptime(start, "%Y-%m-%d").date()
-            end_dt = timezone.datetime.strptime(end, "%Y-%m-%d").date()
+            start_dt = datetime.strptime(start, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end, "%Y-%m-%d").date()
         except ValueError:
             return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        if start_dt > end_dt:
+            return Response({"error": "start_date must be on or before end_date"}, status=400)
+
+        # DateTimeField + USE_TZ: store aware datetimes (start of first day, end of last day)
+        start_at = timezone.make_aware(datetime.combine(start_dt, time.min))
+        end_at = timezone.make_aware(datetime.combine(end_dt, time.max))
         
-        logs = NetworkLog.objects.filter(
-            created_at__date__gte=start_dt,
-            created_at__date__lte=end_dt
-        )
-        alerts = Alert.objects.filter(
-            created_at__date__gte=start_dt,
-            created_at__date__lte=end_dt
-            )
+        logs = logs_for_report_range(start_at, end_at)
+        alerts = alerts_for_report_range(start_at, end_at)
         
         top_attack = (
             alerts.values("attack_type")
@@ -581,11 +588,17 @@ class ReportView(APIView):
         week_size = max(1, total_days // 4)
         weekly_activity = []
         for i in range(4):
-            week_start = start_dt + timezone.timedelta(days=i*week_size)
-            week_end = start_dt + timezone.timedelta(days=(i+1)*week_size)
+            week_start_d = start_dt + timedelta(days=i * week_size)
+            if week_start_d > end_dt:
+                weekly_activity.append({"time": f"Week {i+1}", "logs": 0})
+                continue
+            segment_end_d = min(
+                start_dt + timedelta(days=(i + 1) * week_size),
+                end_dt + timedelta(days=1),
+            )
             count = logs.filter(
-                created_at__date__gte=week_start,
-                created_at__date__lt=week_end
+                _evt__date__gte=week_start_d,
+                _evt__date__lt=segment_end_d,
             ).count()
             weekly_activity.append({
                 "time": f"Week {i+1}",
@@ -601,32 +614,69 @@ class ReportView(APIView):
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp+tn) / total_classified * 100, 1)
         
+        top_attacking_ip = None
+        if top_ip and top_ip.get("log__src_ip") is not None:
+            top_attacking_ip = str(top_ip["log__src_ip"])
+
+        snapshot = {
+            "top_attacking_ip": top_attacking_ip,
+            "threat_distribution": threat_distribution,
+            "weekly_activity": weekly_activity,
+            "detection_accuracy": accuracy,
+        }
+
         report = Report.objects.create(
-            name = f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
-            report_type = report_type,
-            format = fmt,
-            start_date=start_dt,
-            end_date=end_dt,
+            name=f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
+            report_type=report_type,
+            format=fmt,
+            start_date=start_at,
+            end_date=end_at,
             generated_by=request.user if request.user.is_authenticated else None,
             total_logs=logs.count(),
             total_threats=alerts.count(),
             critical_threats=alerts.filter(severity="critical").count(),
-            top_attack_type = top_attack["attack_type"] if top_attack else None,
+            top_attack_type=top_attack["attack_type"] if top_attack else None,
+            snapshot=snapshot,
         )
-        
-        return Response({
-            **ReportSerializer(report).data,
-            # Extra fields preview (not stored in db)
-            "top_attacking_ip": top_ip["log__src_ip"] if top_ip else None,
-            "threat_distribution": threat_distribution,
-            "weekly_activity": weekly_activity,
-            "detection_accuracy": accuracy,
-            }, status=201)
+
+        try:
+            save_report_file(report)
+        except Exception:
+            # File on disk optional; download still uses render_report_file_bytes(report)
+            pass
+
+        report.refresh_from_db()
+        data = ReportSerializer(report).data
+        # Always include chart/preview fields in POST body (avoids serializer/DB JSON quirks)
+        data["top_attacking_ip"] = top_attacking_ip
+        data["threat_distribution"] = threat_distribution
+        data["weekly_activity"] = weekly_activity
+        data["detection_accuracy"] = accuracy
+        return Response(data, status=201)
     
     def get(self, request):
         reports = Report.objects.order_by("-generated_at")
         return Response(ReportSerializer(reports, many=True).data)
-    
+
+
+class ReportDownloadView(APIView):
+    def get(self, request, pk):
+        report = Report.objects.filter(pk=pk).first()
+        if not report:
+            return Response({"error": "Report not found"}, status=404)
+        try:
+            content, content_type, ext = render_report_file_bytes(report)
+        except Exception:
+            return Response({"error": "Could not build report file"}, status=500)
+        filename = f"sentinel_report_{report.id}{ext}"
+        return FileResponse(
+            io.BytesIO(content),
+            as_attachment=True,
+            filename=filename,
+            content_type=content_type,
+        )
+
+
 # Settings Page
 class SettingsView(APIView):
     def get(self, request):
