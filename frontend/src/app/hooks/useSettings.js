@@ -108,8 +108,10 @@ export function useSettings() {
       const created = await createApiKey({ name });
       setApiKeys((prev) => [created, ...prev]);
       toast.success("API key generated");
+      return true;
     } catch (e) {
       toast.error(e.friendlyMessage || "Failed to generate API key");
+      return false;
     }
   };
 
@@ -135,8 +137,10 @@ export function useSettings() {
       });
       setTeamMembers((prev) => [created, ...prev]);
       toast.success("Team member invited");
+      return true;
     } catch (e) {
       toast.error(e.friendlyMessage || "Failed to invite team member");
+      return false;
     }
   };
 

@@ -58,7 +58,7 @@ export function GenerateApiKeyDialog({ open, onOpenChange, onSubmit }) {
             <Button
               type="button"
               variant="outline"
-              className="border-[#334155] bg-transparent text-white hover:bg-[#0F172A]"
+              className="border-[#334155] bg-transparent text-white hover:bg-[#0F172A] hover:text-white"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
             >
