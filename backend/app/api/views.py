@@ -14,11 +14,11 @@ from datetime import timedelta
 
 from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
-from app.api.serializers import AlertSerializer, NetworkLogSerializer, ReportSerializer, UploadedFileSerializer, SystemSettingsSerializer
+from app.api.serializers import AlertSerializer, NetworkLogSerializer, ReportSerializer, UploadedFileSerializer, SystemSettingsSerializer, IntegrationApiKeySerializer, TeamMemberSerializer
 from app.logs.models import NetworkLog, UploadedFile
 from app.alerts.models import Alert 
 from app.reports.models import Report
-from app.settings_app.models import SystemSetting
+from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 from ml_engine.normalization import normalizer
 
@@ -530,7 +530,11 @@ class ReportView(APIView):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
         report_type = request.data.get("report_type", "threat_summary")
-        fmt = request.data.get("formart", "json")
+        fmt = request.data.get("format", "json")
+        report_type_aliases = {
+            "ai_detection": "ai_performance",
+        }
+        report_type = report_type_aliases.get(report_type, report_type)
         
         if not start or not end:
             return Response({"error": "start_date and end_date are required"}, status=400)
@@ -565,11 +569,11 @@ class ReportView(APIView):
         )
         
         # Threat distribution for pie chart
-        threat_distribution = {
+        threat_distribution = list(
             alerts.values("attack_type")
             .annotate(count=Count("attack_type"))
             .order_by("-count")[:5]
-        }
+        )
         
         # Weekly log activity for bar chart
         # Split date ranges in 4 equal weeks
@@ -643,3 +647,52 @@ class SettingsView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400) 
+
+
+class IntegrationApiKeysView(APIView):
+    def get(self, request):
+        keys = IntegrationApiKey.objects.order_by("-created_at")
+        return Response(IntegrationApiKeySerializer(keys, many=True).data)
+
+    def post(self, request):
+        name = request.data.get("name", "Generated API Key")
+        key = IntegrationApiKey.objects.create(
+            name=name,
+            key_value=IntegrationApiKey.generate_key(),
+        )
+        return Response(IntegrationApiKeySerializer(key).data, status=201)
+
+
+class IntegrationApiKeyDetailView(APIView):
+    def delete(self, request, key_id):
+        key = IntegrationApiKey.objects.filter(id=key_id).first()
+        if not key:
+            return Response({"error": "API key not found"}, status=404)
+        key.revoked_at = timezone.now()
+        key.save(update_fields=["revoked_at"])
+        return Response({"status": "revoked"})
+
+
+class TeamMembersView(APIView):
+    def get(self, request):
+        members = TeamMember.objects.order_by("-created_at")
+        return Response(TeamMemberSerializer(members, many=True).data)
+
+    def post(self, request):
+        serializer = TeamMemberSerializer(data=request.data)
+        if serializer.is_valid():
+            member = serializer.save()
+            return Response(TeamMemberSerializer(member).data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class TeamMemberDetailView(APIView):
+    def patch(self, request, member_id):
+        member = TeamMember.objects.filter(id=member_id).first()
+        if not member:
+            return Response({"error": "Team member not found"}, status=404)
+        serializer = TeamMemberSerializer(member, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
