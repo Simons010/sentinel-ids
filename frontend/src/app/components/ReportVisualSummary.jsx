@@ -91,7 +91,9 @@ export function ReportVisualSummary({ data }) {
               <YAxis
                 stroke="#9CA3AF"
                 tick={{ fill: "#9CA3AF" }}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                tickFormatter={(v) =>
+                  v >= 1000 ? `${(v / 1000).toFixed(1)}K` : `${v}`
+                }
               />
               <Tooltip
                 contentStyle={{

@@ -3,7 +3,6 @@ import { ReportPreviewSection } from "../components/ReportPreviewSection";
 import { ReportsHistoryTable } from "../components/ReportsHistoryTable";
 import { ReportVisualSummary } from "../components/ReportVisualSummary";
 import { useReports } from "../hooks/useReports";
-import { toast } from "sonner";
 
 export default function Reports() {
   const {
@@ -12,6 +11,7 @@ export default function Reports() {
     previewData,
     isGenerating,
     handleGenerateReport,
+    handleDownloadReport,
   } = useReports();
 
   return (
@@ -39,7 +39,11 @@ export default function Reports() {
       )}
 
       {/* Reports History */}
-      <ReportsHistoryTable history={history} loading={historyLoading} />
+      <ReportsHistoryTable
+        history={history}
+        loading={historyLoading}
+        onDownload={handleDownloadReport}
+      />
 
       {/* Footer */}
       <div className="mt-8 pt-6 border-t border-[#334155]">

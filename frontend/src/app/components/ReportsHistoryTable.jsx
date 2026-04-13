@@ -1,7 +1,11 @@
 import { Download, Search } from "lucide-react";
 import { useState } from "react";
 
-export function ReportsHistoryTable({ history = [], loading = false }) {
+export function ReportsHistoryTable({
+  history = [],
+  loading = false,
+  onDownload,
+}) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = history.filter(
@@ -127,7 +131,11 @@ export function ReportsHistoryTable({ history = [], loading = false }) {
                     </span>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    <button className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE]/10 text-[#22D3EE] rounded-lg hover:bg-[#22D3EE]/20 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => onDownload?.(report)}
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE]/10 text-[#22D3EE] rounded-lg hover:bg-[#22D3EE]/20 transition-colors"
+                    >
                       <Download className="w-4 h-4" />
                       <span className="text-sm font-medium">Download</span>
                     </button>

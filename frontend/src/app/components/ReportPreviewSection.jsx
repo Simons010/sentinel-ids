@@ -12,19 +12,19 @@ export function ReportPreviewSection({ data }) {
     {
       icon: FileText,
       label: "Total Logs Processed",
-      value: data?.total_logs.toLocaleString() ?? "--",
+      value: data?.total_logs?.toLocaleString?.() ?? "--",
       color: "#22D3EE",
     },
     {
       icon: Shield,
       label: "Total Threats Detected",
-      value: data?.total_threats.toLocaleString() ?? "--",
+      value: data?.total_threats?.toLocaleString?.() ?? "--",
       color: "#F59E0B",
     },
     {
       icon: AlertTriangle,
       label: "Critical Threats",
-      value: data?.critical_threats.toLocaleString() ?? "--",
+      value: data?.critical_threats?.toLocaleString?.() ?? "--",
       color: "#EF4444",
     },
     {
