@@ -22,6 +22,7 @@ from app.alerts.models import Alert
 from app.reports.models import Report
 from app.reports.export import render_report_file_bytes, save_report_file
 from app.reports.querysets import alerts_for_report_range, logs_for_report_range
+from app.reports.weekly import weekly_log_activity_buckets
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 from ml_engine.normalization import normalizer
@@ -582,28 +583,8 @@ class ReportView(APIView):
             .order_by("-count")[:5]
         )
         
-        # Weekly log activity for bar chart
-        # Split date ranges in 4 equal weeks
-        total_days = (end_dt - start_dt).days or 1
-        week_size = max(1, total_days // 4)
-        weekly_activity = []
-        for i in range(4):
-            week_start_d = start_dt + timedelta(days=i * week_size)
-            if week_start_d > end_dt:
-                weekly_activity.append({"time": f"Week {i+1}", "logs": 0})
-                continue
-            segment_end_d = min(
-                start_dt + timedelta(days=(i + 1) * week_size),
-                end_dt + timedelta(days=1),
-            )
-            count = logs.filter(
-                _evt__date__gte=week_start_d,
-                _evt__date__lt=segment_end_d,
-            ).count()
-            weekly_activity.append({
-                "time": f"Week {i+1}",
-                "logs": count
-            })
+        # Weekly log activity: four contiguous day buckets (full range), filter by _evt datetimes
+        weekly_activity = weekly_log_activity_buckets(start_dt, end_dt, logs)
             
         # Ml accuracy for confusion matrix
         threshold = 0.5

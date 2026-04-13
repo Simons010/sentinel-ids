@@ -83,6 +83,12 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+# So the SPA can read Content-Disposition (correct .txt vs .pdf on report download).
+CORS_EXPOSE_HEADERS = [
+    "Content-Disposition",
+    "content-type",
+]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

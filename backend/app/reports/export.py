@@ -111,8 +111,17 @@ def _build_pdf_bytes(payload: dict[str, Any]) -> bytes:
     for row in payload.get("weekly_activity") or []:
         line = f"  {row.get('time')}: {row.get('logs')} logs"
         pdf.multi_cell(0, 5, txt=_pdf_safe_text(line))
-    out = pdf.output()
-    return bytes(out) if not isinstance(out, bytes) else out
+    try:
+        out = pdf.output(dest="S")
+    except TypeError:
+        out = pdf.output()
+    if isinstance(out, str):
+        out = out.encode("latin-1", errors="replace")
+    elif not isinstance(out, (bytes, bytearray)):
+        out = bytes(out)
+    else:
+        out = bytes(out)
+    return out.lstrip()
 
 
 def _render_pdf_output(payload: dict[str, Any]) -> tuple[bytes, str, str]:
@@ -122,7 +131,7 @@ def _render_pdf_output(payload: dict[str, Any]) -> tuple[bytes, str, str]:
     """
     try:
         raw = _build_pdf_bytes(payload)
-        if not raw.startswith(b"%PDF"):
+        if not raw.lstrip().startswith(b"%PDF"):
             raise ValueError("Generator did not produce a PDF signature")
         return raw, "application/pdf", ".pdf"
     except Exception as exc:
