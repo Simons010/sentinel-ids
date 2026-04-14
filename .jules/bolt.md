@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoid fetching unbouded querysets into memory for aggregation
+**Learning:** In the Django backend, `logs.values_list("ml_score", flat=True)` and multiple `.count()` queries were used to calculate score buckets and anomaly metrics on potentially unbounded logs querysets. This pulls the entire list of scores into Python memory, causing O(N) memory scaling and N+1/redundant queries.
+**Action:** Use `.aggregate()` with `Q` objects (e.g. `Count('id', filter=Q(is_suspicious=True, ml_score__gte=0.5))`) to calculate all metrics in a single database query, returning only a small dictionary to Python and shifting memory usage from O(N) to O(1).
