@@ -1,0 +1,4 @@
+## 2025-02-27 - Missing Default Permission Classes in DRF
+**Vulnerability:** The Django REST Framework (DRF) configuration in `backend/backend/settings.py` lacks a global `DEFAULT_PERMISSION_CLASSES` fallback. As a result, all custom `APIView` and generic views without explicit permissions default to public access. 14 critical endpoints were exposed unauthenticated.
+**Learning:** In this specific architecture, the omission of default global restrictions means that every new endpoint introduced is fully public by default. The assumption that standard Django authentication handles the API layer is false.
+**Prevention:** To avoid this next time, ensure that a secure-by-default posture is implemented globally in `REST_FRAMEWORK` settings (e.g., `rest_framework.permissions.IsAuthenticated`), so that new developers must intentionally opt-in to public endpoints via `permission_classes = [AllowAny]`. For now, I've manually locked down all API endpoints.
