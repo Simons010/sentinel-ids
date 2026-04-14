@@ -39,7 +39,7 @@ api.interceptors.response.use(
 
     // Attach  clean message to the error for components to use
     error.friendlyMessage = message;
-    return Promise.reject(errror);
+    return Promise.reject(error);
   },
 );
 

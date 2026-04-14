@@ -1,4 +1,5 @@
 from django.db import models
+import secrets
 
 # settings model
 class SystemSetting(models.Model):
@@ -18,6 +19,7 @@ class SystemSetting(models.Model):
     
     # Database Retention
     retention_days = models.IntegerField(default=90)
+    archive_location = models.CharField(max_length=255, default="/var/log/sentinel-ids/archives")
     auto_archive = models.BooleanField(default=True)
     
     # AI Model
@@ -28,7 +30,51 @@ class SystemSetting(models.Model):
     )
     continuous_learning = models.BooleanField(default=True)
     ai_sensitivity = models.IntegerField(default=85)  # 0-100 scale
+
+    # Email configuration
+    smtp_server = models.CharField(max_length=255, blank=True, default="")
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=255, blank=True, default="")
+    smtp_password = models.CharField(max_length=255, blank=True, default="")
     
     def __str__(self):
         return f"Settings for {self.user}" 
-    
+
+
+class IntegrationApiKey(models.Model):
+    name = models.CharField(max_length=120)
+    key_value = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_active(self):
+        return self.revoked_at is None
+
+    @staticmethod
+    def generate_key():
+        return f"sk_{secrets.token_urlsafe(24)}"
+
+    def __str__(self):
+        return self.name
+
+
+class TeamMember(models.Model):
+    ROLE_CHOICES = [
+        ("admin", "Admin"),
+        ("analyst", "Analyst"),
+        ("viewer", "Viewer"),
+    ]
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("pending", "Pending"),
+    ]
+
+    name = models.CharField(max_length=120)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="viewer")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email

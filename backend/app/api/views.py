@@ -1,5 +1,7 @@
+import io
 import os
 
+from django.http import FileResponse
 from django.shortcuts import render
 from django.db.models import Count, Max
 from django.utils import timezone
@@ -10,15 +12,22 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
-from app.api.serializers import AlertSerializer, NetworkLogSerializer, ReportSerializer, UploadedFileSerializer, SystemSettingsSerializer
+from app.api.serializers import AlertSerializer, NetworkLogSerializer, ReportSerializer, UploadedFileSerializer, SystemSettingsSerializer, IntegrationApiKeySerializer, TeamMemberSerializer
 from app.logs.models import NetworkLog, UploadedFile
 from app.alerts.models import Alert 
 from app.reports.models import Report
-from app.settings_app.models import SystemSetting
+from app.reports.export import render_report_file_bytes, save_report_file
+from app.reports.querysets import alerts_for_report_range, logs_for_report_range
+from app.reports.report_payload import (
+    VALID_REPORT_TYPES,
+    build_report_snapshot,
+    normalize_report_type,
+)
+from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 from ml_engine.normalization import normalizer
 
@@ -529,53 +538,93 @@ class ReportView(APIView):
     def post(self, request):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
-        report_type = request.data.get("report_type", "threat_summary")
-        fmt = request.data.get("formart", "json")
-        
-        start_dt = timezone.datetime.strptime(start, "%Y-%m-%d").date()
-        end_dt = timezone.datetime.strptime(end, "%Y-%m-%d").date()
-        
-        logs = NetworkLog.objects.filter(
-            timestamp__date__gte=start_dt,
-            timestamp__date__lte=end_dt
+        report_type = normalize_report_type(
+            request.data.get("report_type", "threat_summary")
         )
-        alerts = Alert.objects.filter(
-            created_at__date__gte=start_dt,
-            created_at__date__lte=end_dt
+        fmt = (request.data.get("format") or "json").lower()
+        if fmt not in ("pdf", "csv", "json"):
+            fmt = "json"
+        if report_type not in VALID_REPORT_TYPES:
+            return Response(
+                {
+                    "error": "Invalid report_type",
+                    "allowed": sorted(VALID_REPORT_TYPES),
+                },
+                status=400,
             )
         
-        top_attack = (
-            alerts.values("attack_type")
-            .annotate(c=Count("attack_type"))
-            .order_by("-c")
-            .first()
-        )
-        top_ip = (
-            alerts.exclude(log__src_ip=None)
-            .values("log__src_ip")
-            .annotate(c=Count("id"))
-            .order_by("-c")
-            .first()
-        )
+        if not start or not end:
+            return Response({"error": "start_date and end_date are required"}, status=400)
         
+        try:
+            start_dt = datetime.strptime(start, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        if start_dt > end_dt:
+            return Response({"error": "start_date must be on or before end_date"}, status=400)
+
+        # DateTimeField + USE_TZ: store aware datetimes (start of first day, end of last day)
+        start_at = timezone.make_aware(datetime.combine(start_dt, time.min))
+        end_at = timezone.make_aware(datetime.combine(end_dt, time.max))
+        
+        logs = logs_for_report_range(start_at, end_at)
+        alerts = alerts_for_report_range(start_at, end_at)
+
+        snapshot, overrides = build_report_snapshot(
+            report_type, logs, alerts, start_dt, end_dt
+        )
+
         report = Report.objects.create(
-            name = f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
-            report_type = report_type,
-            format = fmt,
-            start_date=start_dt,
-            end_date=end_dt,
+            name=f"{report_type.replace('_', ' ').title()} - {end_dt.strftime('%B %Y')}",
+            report_type=report_type,
+            format=fmt,
+            start_date=start_at,
+            end_date=end_at,
             generated_by=request.user if request.user.is_authenticated else None,
             total_logs=logs.count(),
+            total_threats=alerts.count(),
             critical_threats=alerts.filter(severity="critical").count(),
-            top_attack_type = top_attack["attack_type"] if top_attack else None,
+            top_attack_type=overrides.get("top_attack_type"),
+            snapshot=snapshot,
         )
-        
-        return Response(ReportSerializer(report).data, status=201)
+
+        try:
+            save_report_file(report)
+        except Exception:
+            # File on disk optional; download still uses render_report_file_bytes(report)
+            pass
+
+        report.refresh_from_db()
+        data = ReportSerializer(report).data
+        for key, value in snapshot.items():
+            data[key] = value
+        return Response(data, status=201)
     
     def get(self, request):
         reports = Report.objects.order_by("-generated_at")
         return Response(ReportSerializer(reports, many=True).data)
-    
+
+
+class ReportDownloadView(APIView):
+    def get(self, request, pk):
+        report = Report.objects.filter(pk=pk).first()
+        if not report:
+            return Response({"error": "Report not found"}, status=404)
+        try:
+            content, content_type, ext = render_report_file_bytes(report)
+        except Exception:
+            return Response({"error": "Could not build report file"}, status=500)
+        filename = f"sentinel_report_{report.id}{ext}"
+        return FileResponse(
+            io.BytesIO(content),
+            as_attachment=True,
+            filename=filename,
+            content_type=content_type,
+        )
+
+
 # Settings Page
 class SettingsView(APIView):
     def get(self, request):
@@ -596,3 +645,52 @@ class SettingsView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400) 
+
+
+class IntegrationApiKeysView(APIView):
+    def get(self, request):
+        keys = IntegrationApiKey.objects.order_by("-created_at")
+        return Response(IntegrationApiKeySerializer(keys, many=True).data)
+
+    def post(self, request):
+        name = request.data.get("name", "Generated API Key")
+        key = IntegrationApiKey.objects.create(
+            name=name,
+            key_value=IntegrationApiKey.generate_key(),
+        )
+        return Response(IntegrationApiKeySerializer(key).data, status=201)
+
+
+class IntegrationApiKeyDetailView(APIView):
+    def delete(self, request, key_id):
+        key = IntegrationApiKey.objects.filter(id=key_id).first()
+        if not key:
+            return Response({"error": "API key not found"}, status=404)
+        key.revoked_at = timezone.now()
+        key.save(update_fields=["revoked_at"])
+        return Response({"status": "revoked"})
+
+
+class TeamMembersView(APIView):
+    def get(self, request):
+        members = TeamMember.objects.order_by("-created_at")
+        return Response(TeamMemberSerializer(members, many=True).data)
+
+    def post(self, request):
+        serializer = TeamMemberSerializer(data=request.data)
+        if serializer.is_valid():
+            member = serializer.save()
+            return Response(TeamMemberSerializer(member).data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class TeamMemberDetailView(APIView):
+    def patch(self, request, member_id):
+        member = TeamMember.objects.filter(id=member_id).first()
+        if not member:
+            return Response({"error": "Team member not found"}, status=404)
+        serializer = TeamMemberSerializer(member, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from app.logs.models import NetworkLog, UploadedFile
 from app.alerts.models import Alert
 from app.reports.models import Report
-from app.settings_app.models import SystemSetting
+from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.normalization.normalizer import LogNormalizer
 from ml_engine.normalization.enricher import LogEnricher
 from dateutil.parser import parse as parse_date
@@ -290,6 +290,35 @@ class ReportSerializer(serializers.ModelSerializer):
             "total_logs", "total_threats", "critical_threats", "top_attack_type",
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        snap = getattr(instance, "snapshot", None) or {}
+        if isinstance(snap, str):
+            try:
+                snap = json.loads(snap)
+            except (json.JSONDecodeError, TypeError):
+                snap = {}
+        if not isinstance(snap, dict):
+            snap = {}
+        for key in (
+            "top_attacking_ip",
+            "threat_distribution",
+            "weekly_activity",
+            "detection_accuracy",
+            "distribution_title",
+            "weekly_title",
+            "suspicious_log_count",
+            "clean_log_count",
+            "unique_source_ips",
+            "true_positives",
+            "false_positives",
+            "true_negatives",
+            "false_negatives",
+        ):
+            if key in snap:
+                data[key] = snap[key]
+        return data
+
     def get_file_size_display(self, obj):  # fixed — now at serializer level
         size = obj.file_size or 0
         if size < 1024:       return f"{size} B"
@@ -307,6 +336,62 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
             "slack_integration", "sms_alerts",
             "two_factor_auth", "auto_block_threats",
             "ip_whitelisting", "session_timeout",
-            "retention_days", "auto_archive",
+            "retention_days", "archive_location", "auto_archive",
             "ai_model_mode", "continuous_learning", "ai_sensitivity",
+            "smtp_server", "smtp_port", "smtp_username", "smtp_password",
         ]
+
+
+class IntegrationApiKeySerializer(serializers.ModelSerializer):
+    key = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField()
+
+    class Meta:
+        model = IntegrationApiKey
+        fields = ["id", "name", "key", "created_at", "is_active"]
+
+    def get_key(self, obj):
+        token = obj.key_value or ""
+        return f"{token[:10]}..." if token else ""
+
+    def get_is_active(self, obj):
+        return obj.is_active
+
+
+class TeamMemberSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source="get_role_display", read_only=True)
+    role_value = serializers.ChoiceField(
+        source="role",
+        choices=TeamMember.ROLE_CHOICES,
+        write_only=True,
+        required=False,
+    )
+    status = serializers.CharField(source="get_status_display", read_only=True)
+    status_value = serializers.ChoiceField(
+        source="status",
+        choices=TeamMember.STATUS_CHOICES,
+        write_only=True,
+        required=False,
+    )
+
+    class Meta:
+        model = TeamMember
+        fields = ["id", "name", "email", "role", "role_value", "status", "status_value", "created_at"]
+
+    def create(self, validated_data):
+        role = validated_data.pop("role", None)
+        status = validated_data.pop("status", None)
+        if role:
+            validated_data["role"] = role
+        if status:
+            validated_data["status"] = status
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        role = validated_data.pop("role", None)
+        status = validated_data.pop("status", None)
+        if role:
+            validated_data["role"] = role
+        if status:
+            validated_data["status"] = status
+        return super().update(instance, validated_data)

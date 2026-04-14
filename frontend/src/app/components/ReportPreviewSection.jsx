@@ -1,49 +1,80 @@
-import { FileText, Shield, AlertTriangle, Target, Globe, TrendingUp } from 'lucide-react';
+import {
+  FileText,
+  Shield,
+  AlertTriangle,
+  Target,
+  Globe,
+  TrendingUp,
+} from "lucide-react";
 
-export function ReportPreviewSection() {
+function normalizeReportType(raw) {
+  const s = (raw || "threat_summary").toString().trim().toLowerCase().replace(/-/g, "_");
+  if (s === "ai_detection") return "ai_performance";
+  return s;
+}
+
+export function ReportPreviewSection({ data }) {
+  const rt = normalizeReportType(data?.report_type);
+
+  const insightLabel =
+    rt === "log_activity"
+      ? "Top event / log type"
+      : rt === "network_security"
+        ? "Top protocol / service"
+        : rt === "ai_performance"
+          ? "ML score summary"
+          : "Most common attack type";
+
+  const showUniqueSources =
+    rt === "network_security" && data?.unique_source_ips != null;
+
   const previewMetrics = [
     {
       icon: FileText,
-      label: 'Total Logs Processed',
-      value: '2,847,392',
-      color: '#22D3EE'
+      label: "Total Logs Processed",
+      value: data?.total_logs?.toLocaleString?.() ?? "--",
+      color: "#22D3EE",
     },
     {
       icon: Shield,
-      label: 'Total Threats Detected',
-      value: '1,243',
-      color: '#F59E0B'
+      label: "Total Threats Detected",
+      value: data?.total_threats?.toLocaleString?.() ?? "--",
+      color: "#F59E0B",
     },
     {
       icon: AlertTriangle,
-      label: 'Critical Threats',
-      value: '87',
-      color: '#EF4444'
+      label: "Critical Threats",
+      value: data?.critical_threats?.toLocaleString?.() ?? "--",
+      color: "#EF4444",
     },
     {
       icon: Target,
-      label: 'Most Common Attack',
-      value: 'SQL Injection',
-      color: '#F97316'
+      label: insightLabel,
+      value: data?.top_attack_type ?? "--",
+      color: "#F97316",
     },
     {
       icon: Globe,
-      label: 'Top Attacking IP',
-      value: '192.168.45.67',
-      color: '#8B5CF6'
+      label: showUniqueSources ? "Unique source IPs" : "Top attacking IP",
+      value: showUniqueSources
+        ? String(data.unique_source_ips)
+        : (data?.top_attacking_ip ?? "--"),
+      color: "#8B5CF6",
     },
     {
       icon: TrendingUp,
-      label: 'Detection Accuracy',
-      value: '98.2%',
-      color: '#10B981'
-    }
+      label: "Detection Accuracy",
+      value: data?.detection_accuracy ? `${data.detection_accuracy}%` : "--",
+      color: "#10B981",
+    },
   ];
 
   return (
     <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
       <h3 className="text-lg font-semibold text-white mb-4">Report Preview</h3>
-      <p className="text-sm text-gray-400 mb-6">Summary of key metrics from the generated report</p>
+      <p className="text-sm text-gray-400 mb-6">
+        Summary of key metrics from the generated report
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {previewMetrics.map((metric, index) => {
