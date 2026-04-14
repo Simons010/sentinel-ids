@@ -3,7 +3,7 @@ import os
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -456,13 +456,27 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
-        total = tp + tn + fp + fn or 1
+        # ⚡ Bolt: Optimize ML analytics memory and query efficiency
+        # Replaced 6 separate .count() queries and an O(N) .values_list() iteration
+        # with a single database .aggregate() query to reduce hits and prevent O(N) memory scaling.
+        metrics = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+            b0=Count('id', filter=Q(ml_score__lt=0.2)),
+            b1=Count('id', filter=Q(ml_score__gte=0.2, ml_score__lt=0.4)),
+            b2=Count('id', filter=Q(ml_score__gte=0.4, ml_score__lt=0.6)),
+            b3=Count('id', filter=Q(ml_score__gte=0.6, ml_score__lt=0.8)),
+            b4=Count('id', filter=Q(ml_score__gte=0.8)),
+            anomalous=Count('id', filter=Q(is_suspicious=True)),
+            total=Count('id')
+        )
+
+        tp, tn, fp, fn = metrics['tp'], metrics['tn'], metrics['fp'], metrics['fn']
+        total_classified = tp + tn + fp + fn or 1
         
-        accuracy = round((tp + tn) / total * 100, 1)
+        accuracy = round((tp + tn) / total_classified * 100, 1)
         precision = round(tp / (tp + fp or 1) * 100, 1)
         recall = round(tp / (tp + fn or 1) * 100, 1)
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
@@ -501,14 +515,11 @@ class AnalyticsView(APIView):
         )
         
         # Confidence score distribution (buckets 0-20, 20-40 etc.)
-        buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
+        buckets = [metrics['b0'], metrics['b1'], metrics['b2'], metrics['b3'], metrics['b4']]
             
         # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        total_logs = metrics['total'] or 1
+        anomalous = metrics['anomalous']
         
         return Response({
             "accuracy": accuracy,
