@@ -1,0 +1,3 @@
+## 2024-04-14 - Accessible Notification Badges
+**Learning:** Hardcoding static `aria-label` attributes to override a dynamic notification component (like a bell with an unread badge) can hide the badge's actual, changing count from screen readers, causing a technical debt. Instead, dynamically inject visually hidden screen-reader only (`sr-only`) text specifically inside the element alongside the visual badges to keep both visually impaired and sighted users in sync, without stripping out other text.
+**Action:** Use inline `sr-only` spans for text instead of fully overriding `aria-label` when the component contains stateful, informative child elements (like unread counts).
