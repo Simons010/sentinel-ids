@@ -197,7 +197,7 @@ class DashboardStatsView(APIView):
                 "ai_summary": self._get_ai_summary(alerts_24h),
             }
         )
-        p
+        
     def _get_ai_summary(self, alerts_qs):
         latest = Alert.objects.all().order_by("-created_at").first()
         if not latest:
@@ -470,8 +470,8 @@ class AnalyticsView(APIView):
         last_24h = timezone.now() - timedelta(hours=24)
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 -i)
-            hour_end = hour_start - timedelta(hours=1)
+            hour_start = timezone.now() - timedelta(hours=24 - i)
+            hour_end = hour_start + timedelta(hours=1)
             normal = NetworkLog.objects.filter(
                 created_at__gte=hour_start, 
                 created_at__lt=hour_end,

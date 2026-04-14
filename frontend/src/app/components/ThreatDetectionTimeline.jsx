@@ -10,7 +10,7 @@ import {
 } from "recharts";
 
 export function ThreatDetectionTimeline({ data }) {
-  const chartData = data.length > 0 ? data : [];
+  const chartData = Array.isArray(data) && data.length > 0 ? data : [];
 
   return (
     <div className="bg-[#1E293B] rounded-xl p-6 border border-[#334155]">
@@ -26,7 +26,7 @@ export function ThreatDetectionTimeline({ data }) {
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis
-              dataKey="time"
+              dataKey="hour"
               stroke="#64748B"
               style={{ fontSize: "12px" }}
             />
@@ -58,7 +58,7 @@ export function ThreatDetectionTimeline({ data }) {
             />
             <Line
               type="monotone"
-              dataKey="threats"
+              dataKey="confirmed"
               stroke="#EF4444"
               strokeWidth={2}
               name="Confirmed Threats"

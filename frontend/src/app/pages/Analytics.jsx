@@ -157,7 +157,7 @@ export default function Analytics() {
         />
         <AIConfidenceChart
           data={data.confidence_distribution}
-          avgConfidence={avgConfidence}
+          averageConfidence={avgConfidence}
         />
       </div>
 
