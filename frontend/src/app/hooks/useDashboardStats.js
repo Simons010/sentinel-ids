@@ -14,12 +14,39 @@ export function useDashboardStats() {
       if (previousRef.current) {
         const previous = previousRef.current;
         if ((res.critical_threats ?? 0) > (previous.critical_threats ?? 0)) {
-          toast.warning("New critical threat detected", {
+          toast.error("New critical threat detected", {
             description: `Critical threats: ${res.critical_threats}`,
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#EF4444",
+              color: "#ffffff",
+              borderRadius: "0.5rem",
+              padding: "0.625rem 0.625rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              textAlign: "center",
+              border: "none",
+              // animation: "pulse 1s infinite",
+            },
           });
         } else if ((res.active_alerts ?? 0) > (previous.active_alerts ?? 0)) {
-          toast.info("New alert received", {
+          toast.warning("New alert received", {
             description: `Active alerts: ${res.active_alerts}`,
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#F97316",
+              color: "#ffffff",
+              borderRadius: "0.5rem",
+              padding: "0.625rem 0.625rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              textAlign: "center",
+              border: "none",
+            },
           });
         }
       }

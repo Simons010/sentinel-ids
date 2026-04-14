@@ -34,22 +34,23 @@ export default function Dashboard() {
           accentColor: "#22D3EE",
         },
         {
-          icon: AlertTriangle,
+          icon: Shield,
           title: "Active Alerts",
           value: data.active_alerts?.toString() ?? "--",
           change: -8.2,
           sparklineData: [
             280, 275, 268, 260, 255, 252, 248, 247, 246, 247, 248, 247,
           ],
-          accentColor: "#EF4444",
+          accentColor: "#F97316",
         },
         {
-          icon: Shield,
+          icon: AlertTriangle,
           title: "Critical Threats",
           value: data.critical_threats?.toString() ?? "--",
           change: -15.3,
           sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
-          accentColor: "#F97316",
+          
+          accentColor: "#EF4444",
         },
         {
           icon: Activity,
