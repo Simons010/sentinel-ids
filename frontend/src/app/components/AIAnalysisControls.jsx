@@ -15,8 +15,8 @@ export function AIAnalysisControls({ selectedFile, onAnalyze, isProcessing }) {
             AI Analysis Engine
           </h3>
           <p className="text-sm text-gray-400 mb-4">
-            Run machine learning analysis to detect anomalies and potential
-            cyber threats in the uploaded logs.
+            Upload validates and previews logs first. Click analyze to run the
+            full ML detection pipeline and generate threat findings.
           </p>
 
           {/* Model Info */}
@@ -55,6 +55,17 @@ export function AIAnalysisControls({ selectedFile, onAnalyze, isProcessing }) {
             <Brain className="w-5 h-5" />
             {isProcessing ? "Analyzing..." : "Analyze with AI"}
           </button>
+
+          {isProcessing && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-400 mb-2">
+                Running ML pipeline across uploaded logs...
+              </div>
+              <div className="relative h-2 rounded-full overflow-hidden bg-[#334155]">
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-[#22D3EE] via-[#F59E0B] to-[#10B981]" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

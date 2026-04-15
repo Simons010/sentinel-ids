@@ -29,9 +29,21 @@ from app.reports.report_payload import (
 )
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
-from ml_engine.normalization import normalizer
 
 correlator = BatchCorrelator()
+
+
+def normalize_uploaded_entry(raw_input):
+    """
+    Reuse the same normalization path as NetworkLogSerializer ingestion so
+    upload validation/preview behavior matches the actual pipeline.
+    """
+    serializer = NetworkLogSerializer()
+    try:
+        entries = serializer._normalize_input(raw_input)
+        return entries if entries else []
+    except Exception:
+        return []
 
 
 class AlertPagination(PageNumberPagination):
@@ -388,13 +400,14 @@ class LogUploadView(APIView):
             file=file,
             filename=file.name,
             file_size=file.size,
-            status="processing"
+            status="pending",
         )
         
-        # Process file
+        # Validate and summarize file content only
         try:
-            results = self._process_file(upload, ext)
-            upload.status = "completed"
+            results = self._validate_file(upload)
+            # Validation is complete, but AI analysis has not started yet.
+            upload.status = "pending"
             upload.total_logs = results["total"]
             upload.valid_logs = results["valid"]
             upload.invalid_logs = results["invalid"]
@@ -411,29 +424,19 @@ class LogUploadView(APIView):
         
         return Response(UploadedFileSerializer(upload).data, status=201)
     
-    def _process_file(self, upload, ext):
+    def _validate_file(self, upload):
         raw = upload.file.read().decode("utf-8", errors="ignore")
         lines = [l.strip() for l in raw.splitlines() if l.strip()]
         total = len(lines)
-        valid = invalid = errors = threats = clean = 0
+        valid = invalid = errors = 0
         
         for line in lines:
             try:
-                parsed = normalizer.normalize(line)
-                if parsed:
+                parsed = normalize_uploaded_entry(line)
+                if parsed and len(parsed) > 0:
                     valid += 1
-                    # run detection on each line
-                    serializer = NetworkLogSerializer(data={"logs":line})
-                    if serializer.is_valid():
-                        logs = serializer.save()
-                        for log in (logs if isinstance(logs, list) else [logs]):
-                            analysis = detection_service.analyze_log(log)
-                            if analysis["is_suspicious"]:
-                                threats += 1
-                            else:
-                                clean += 1
                 else:
-                        invalid += 1
+                    invalid += 1
             except Exception:
                 errors += 1
                 
@@ -442,13 +445,144 @@ class LogUploadView(APIView):
             "valid": valid,
             "invalid": invalid,
             "errors": errors,
-            "threats": threats,
-            "clean": clean
+            "threats": 0,
+            "clean": 0,
         }
     
     def get(self,request):
         uploads = UploadedFile.objects.order_by("-uploaded_at")
         return Response(UploadedFileSerializer(uploads, many=True).data)
+
+
+class LogUploadDetailView(APIView):
+    def delete(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        # Remove the physical uploaded file if present.
+        if upload.file:
+            upload.file.delete(save=False)
+        upload.delete()
+        return Response({"status": "deleted"}, status=200)
+
+
+class LogUploadPreviewView(APIView):
+    def get(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        try:
+            upload.file.seek(0)
+            raw = upload.file.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            return Response({"error": "Failed to read upload", "details": str(e)}, status=500)
+
+        lines = [l.strip() for l in raw.splitlines() if l.strip()]
+        preview = []
+        for line in lines[:25]:
+            try:
+                parsed = normalize_uploaded_entry(line)
+                if not parsed:
+                    continue
+                entry = parsed[0]
+                preview.append(
+                    {
+                        "timestamp": entry.get("timestamp") or "",
+                        "sourceIp": entry.get("src_ip") or "—",
+                        "destIp": entry.get("dst_ip") or "—",
+                        "protocol": (entry.get("proto") or "—").upper(),
+                        "requestType": entry.get("event_type") or "—",
+                        "status": 200,
+                        "threat": "None",
+                    }
+                )
+            except Exception:
+                continue
+
+        return Response({"upload_id": upload.id, "preview_logs": preview})
+
+
+class LogUploadAnalyzeView(APIView):
+    def post(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        force = bool(request.data.get("force")) if isinstance(request.data, dict) else False
+
+        # Prevent duplicate analysis runs for the same upload.
+        if not force and (upload.threats_found or 0) + (upload.clean_logs or 0) > 0:
+            upload.status = "completed"
+            upload.save(update_fields=["status"])
+            return Response(
+                {
+                    "id": upload.id,
+                    "status": upload.status,
+                    "total_logs": upload.total_logs,
+                    "valid_logs": upload.valid_logs,
+                    "invalid_logs": upload.invalid_logs,
+                    "parse_errors": upload.parse_errors,
+                    "threats_found": upload.threats_found,
+                    "clean_logs": upload.clean_logs,
+                    "message": "AI analysis already completed for this upload.",
+                }
+            )
+
+        if force:
+            upload.threats_found = 0
+            upload.clean_logs = 0
+            upload.error_message = None
+            upload.save(update_fields=["threats_found", "clean_logs", "error_message"])
+
+        # AI analysis lifecycle state.
+        upload.status = "processing"
+        upload.error_message = None
+        upload.save(update_fields=["status", "error_message"])
+
+        try:
+            upload.file.seek(0)
+            raw = upload.file.read().decode("utf-8", errors="ignore")
+            lines = [l.strip() for l in raw.splitlines() if l.strip()]
+
+            threats = 0
+            clean = 0
+            for line in lines:
+                serializer = NetworkLogSerializer(data={"logs": line})
+                if not serializer.is_valid():
+                    continue
+                logs = serializer.save()
+                for log in (logs if isinstance(logs, list) else [logs]):
+                    analysis = detection_service.analyze_log(log)
+                    if analysis.get("is_suspicious"):
+                        threats += 1
+                    else:
+                        clean += 1
+
+            upload.threats_found = threats
+            upload.clean_logs = clean
+            upload.status = "completed"
+            upload.save(update_fields=["threats_found", "clean_logs", "status"])
+            return Response(UploadedFileSerializer(upload).data)
+        except Exception as e:
+            upload.status = "failed"
+            upload.error_message = str(e)
+            upload.save(update_fields=["status", "error_message"])
+            return Response({"error": "Failed to analyze file", "details": str(e)}, status=500)
+
+
+class LogUploadMarkFailedView(APIView):
+    def post(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        reason = request.data.get("error_message") if isinstance(request.data, dict) else None
+        upload.status = "failed"
+        upload.error_message = reason or "Analysis interrupted or timed out."
+        upload.save(update_fields=["status", "error_message"])
+        return Response(UploadedFileSerializer(upload).data)
     
 # Analytics Page
 class AnalyticsView(APIView):
