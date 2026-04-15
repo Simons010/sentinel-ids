@@ -139,11 +139,18 @@ export function UploadHistoryTable({
                   </td>
                   <td className="py-4 px-4">{getStatusBadge(item.status)}</td>
                   <td className="py-4 px-4">
-                    <span
-                      className={`text-sm ${item.threats_found > 0 ? "text-[#EF4444] font-medium" : "text-gray-300"}`}
-                    >
-                      {formatResult(item)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm ${item.threats_found > 0 ? "text-[#EF4444] font-medium" : "text-gray-300"}`}
+                      >
+                        {formatResult(item)}
+                      </span>
+                      {item.status === "pending" && item.queue_position ? (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#22D3EE]/20 text-[#22D3EE]">
+                          Queue #{item.queue_position}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center justify-end gap-2">

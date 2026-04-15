@@ -78,14 +78,26 @@ export function useLogUpload() {
               ? {
                   ...f,
                   id: result.id,
-                      status: result.status === "completed" ? "ready" : "failed",
+                  status:
+                    result.status === "failed"
+                      ? "failed"
+                      : result.status === "processing"
+                        ? "processing"
+                        : "ready",
                   progress: 100,
                 }
               : f,
           ),
         );
 
-        // Always select latest successful upload and reflect validation stats
+        if (!result?.id) {
+          toast.error(
+            `Upload succeeded but no upload id was returned for ${file.name}.`,
+          );
+          continue;
+        }
+
+        // Always select latest successful upload and reflect validation stats.
         setSelectedFile({ name: file.name, backendId: result.id });
         setValidationData({
           totalLogs: result.total_logs ?? 0,
@@ -139,46 +151,61 @@ export function useLogUpload() {
       return;
     }
 
-    const fileToAnalyze = targetFile ?? selectedFile;
+    const isEventObject =
+      targetFile &&
+      typeof targetFile === "object" &&
+      (typeof targetFile.preventDefault === "function" ||
+        Object.prototype.hasOwnProperty.call(targetFile, "nativeEvent"));
 
-    if (!fileToAnalyze) {
-      toast.error("Please select a file to analyze");
+    const normalizedTargetFile = isEventObject ? null : targetFile;
+    const fileToAnalyze = normalizedTargetFile ?? selectedFile;
+    const backendId =
+      fileToAnalyze && typeof fileToAnalyze === "object"
+        ? (fileToAnalyze.backendId ?? fileToAnalyze.id)
+        : null;
+
+    if (!fileToAnalyze || !backendId) {
+      toast.error("Please select a valid uploaded file to analyze.");
       return;
+    }
+
+    // Keep AI panel synced with whichever file is being analyzed.
+    if (fileToAnalyze?.name) {
+      setSelectedFile({ name: fileToAnalyze.name, backendId });
     }
 
     setIsProcessing(true);
     setUploadedFiles((prev) =>
       prev.map((f) =>
-        f.id === fileToAnalyze.backendId ? { ...f, status: "processing" } : f,
+        f.id === backendId ? { ...f, status: "processing" } : f,
       ),
     );
     setUploadHistory((prev) =>
-      prev.map((h) =>
-        h.id === fileToAnalyze.backendId ? { ...h, status: "processing" } : h,
-      ),
+      prev.map((h) => (h.id === backendId ? { ...h, status: "processing" } : h)),
     );
 
     try {
-      const result = await analyzeUploadFile(fileToAnalyze.backendId, { force });
+      const result = await analyzeUploadFile(backendId, { force });
+      const nextStatus = result.status === "completed" ? "completed" : "pending";
       setUploadedFiles((prev) =>
         prev.map((f) =>
-          f.id === fileToAnalyze.backendId
+          f.id === backendId
             ? {
                 ...f,
-                status: "completed",
-                progress: 100,
+                status: nextStatus,
+                progress: nextStatus === "completed" ? 100 : f.progress,
               }
             : f,
         ),
       );
       setUploadHistory((prev) =>
         prev.map((h) =>
-          h.id === fileToAnalyze.backendId
+          h.id === backendId
             ? {
                 ...h,
-                status: "completed",
-                threats_found: result.threats_found ?? 0,
-                clean_logs: result.clean_logs ?? 0,
+                status: nextStatus,
+                threats_found: result.threats_found ?? h.threats_found ?? 0,
+                clean_logs: result.clean_logs ?? h.clean_logs ?? 0,
               }
             : h,
         ),
@@ -189,27 +216,35 @@ export function useLogUpload() {
         invalidLogs: result.invalid_logs ?? 0,
         parsingErrors: result.parse_errors ?? 0,
       });
-      toast.success(
-        `AI analysis completed: ${result.threats_found ?? 0} threats found, ${result.clean_logs ?? 0} clean logs.`,
-      );
+      if (nextStatus === "completed") {
+        toast.success(
+          `AI analysis completed: ${result.threats_found ?? 0} threats found, ${result.clean_logs ?? 0} clean logs.`,
+        );
+      } else if (result.already_queued) {
+        toast.info(
+          `Analysis already queued${result.queue_position ? ` (position ${result.queue_position})` : ""}.`,
+        );
+      } else {
+        toast.success(
+          `Analysis queued${result.queue_position ? ` (position ${result.queue_position})` : ""}.`,
+        );
+      }
       await fetchHistory();
     } catch (e) {
       const failureMessage =
         e.friendlyMessage ?? e.message ?? "Analysis interrupted or timed out.";
       setUploadedFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileToAnalyze.backendId ? { ...f, status: "failed" } : f,
-        ),
+        prev.map((f) => (f.id === backendId ? { ...f, status: "failed" } : f)),
       );
       setUploadHistory((prev) =>
         prev.map((h) =>
-          h.id === fileToAnalyze.backendId
+          h.id === backendId
             ? { ...h, status: "failed", error_message: failureMessage }
             : h,
         ),
       );
       try {
-        await markUploadAnalysisFailed(fileToAnalyze.backendId, failureMessage);
+        await markUploadAnalysisFailed(backendId, failureMessage);
       } catch {
         // Backend may be unavailable in timeout/interrupted cases.
       }
@@ -235,6 +270,11 @@ export function useLogUpload() {
 
   const handleReanalyzeFromHistory = async (item) => {
     if (isProcessing) return;
+    if (!item?.id) {
+      toast.error("Unable to reanalyze: missing upload id.");
+      return;
+    }
+    setSelectedFile({ name: item.filename, backendId: item.id });
     await handleAnalyze({ name: item.filename, backendId: item.id }, true);
   };
 

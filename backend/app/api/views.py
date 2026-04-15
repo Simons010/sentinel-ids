@@ -1,5 +1,8 @@
 import io
 import os
+import threading
+import time
+from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
@@ -31,6 +34,113 @@ from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
 
 correlator = BatchCorrelator()
+analysis_queue = deque()
+analysis_queue_state = {}
+analysis_queue_lock = threading.Lock()
+analysis_worker_thread = None
+
+
+def _analyze_uploaded_file(upload_id, force=False):
+    upload = UploadedFile.objects.filter(id=upload_id).first()
+    if not upload:
+        return
+
+    if not force and (upload.threats_found or 0) + (upload.clean_logs or 0) > 0:
+        upload.status = "completed"
+        upload.save(update_fields=["status"])
+        return
+
+    if force:
+        upload.threats_found = 0
+        upload.clean_logs = 0
+
+    upload.status = "processing"
+    upload.error_message = None
+    upload.save(update_fields=["status", "error_message", "threats_found", "clean_logs"])
+
+    try:
+        upload.file.seek(0)
+        raw = upload.file.read().decode("utf-8", errors="ignore")
+        lines = [l.strip() for l in raw.splitlines() if l.strip()]
+
+        threats = 0
+        clean = 0
+        for line in lines:
+            serializer = NetworkLogSerializer(data={"logs": line})
+            if not serializer.is_valid():
+                continue
+            logs = serializer.save()
+            for log in (logs if isinstance(logs, list) else [logs]):
+                analysis = detection_service.analyze_log(log)
+                if analysis.get("is_suspicious"):
+                    threats += 1
+                else:
+                    clean += 1
+
+        upload.threats_found = threats
+        upload.clean_logs = clean
+        upload.status = "completed"
+        upload.save(update_fields=["threats_found", "clean_logs", "status"])
+    except Exception as e:
+        upload.status = "failed"
+        upload.error_message = str(e)
+        upload.save(update_fields=["status", "error_message"])
+
+
+def _analysis_worker_loop():
+    while True:
+        next_item = None
+        with analysis_queue_lock:
+            if analysis_queue:
+                next_item = analysis_queue.popleft()
+
+        if not next_item:
+            time.sleep(0.5)
+            continue
+
+        upload_id, force = next_item
+        try:
+            _analyze_uploaded_file(upload_id, force=force)
+        finally:
+            with analysis_queue_lock:
+                analysis_queue_state.pop(upload_id, None)
+
+
+def _ensure_analysis_worker():
+    global analysis_worker_thread
+    if analysis_worker_thread and analysis_worker_thread.is_alive():
+        return
+
+    # Avoid booting duplicate worker in Django autoreload parent process.
+    if settings.DEBUG and os.environ.get("RUN_MAIN") != "true":
+        return
+
+    analysis_worker_thread = threading.Thread(
+        target=_analysis_worker_loop,
+        name="upload-analysis-worker",
+        daemon=True,
+    )
+    analysis_worker_thread.start()
+
+
+def enqueue_analysis_job(upload_id, force=False):
+    _ensure_analysis_worker()
+
+    with analysis_queue_lock:
+        existing = analysis_queue_state.get(upload_id)
+        if existing:
+            # Upgrade queued item to force when requested.
+            existing["force"] = existing["force"] or force
+            queue_position = 1
+            for idx, (queued_id, _) in enumerate(analysis_queue, start=1):
+                if queued_id == upload_id:
+                    queue_position = idx
+                    break
+            return {"queued": True, "already_queued": True, "position": queue_position}
+
+        analysis_queue.append((upload_id, force))
+        analysis_queue_state[upload_id] = {"force": force}
+        return {"queued": True, "already_queued": False, "position": len(analysis_queue)}
 
 
 def normalize_uploaded_entry(raw_input):
@@ -451,7 +561,17 @@ class LogUploadView(APIView):
     
     def get(self,request):
         uploads = UploadedFile.objects.order_by("-uploaded_at")
-        return Response(UploadedFileSerializer(uploads, many=True).data)
+        serialized = UploadedFileSerializer(uploads, many=True).data
+
+        with analysis_queue_lock:
+            position_map = {}
+            for idx, (queued_id, _) in enumerate(analysis_queue, start=1):
+                position_map[queued_id] = idx
+
+        for item in serialized:
+            item["queue_position"] = position_map.get(item["id"])
+
+        return Response(serialized)
 
 
 class LogUploadDetailView(APIView):
@@ -512,10 +632,7 @@ class LogUploadAnalyzeView(APIView):
 
         force = bool(request.data.get("force")) if isinstance(request.data, dict) else False
 
-        # Prevent duplicate analysis runs for the same upload.
         if not force and (upload.threats_found or 0) + (upload.clean_logs or 0) > 0:
-            upload.status = "completed"
-            upload.save(update_fields=["status"])
             return Response(
                 {
                     "id": upload.id,
@@ -530,46 +647,20 @@ class LogUploadAnalyzeView(APIView):
                 }
             )
 
-        if force:
-            upload.threats_found = 0
-            upload.clean_logs = 0
-            upload.error_message = None
-            upload.save(update_fields=["threats_found", "clean_logs", "error_message"])
-
-        # AI analysis lifecycle state.
-        upload.status = "processing"
+        upload.status = "pending"
         upload.error_message = None
         upload.save(update_fields=["status", "error_message"])
 
-        try:
-            upload.file.seek(0)
-            raw = upload.file.read().decode("utf-8", errors="ignore")
-            lines = [l.strip() for l in raw.splitlines() if l.strip()]
-
-            threats = 0
-            clean = 0
-            for line in lines:
-                serializer = NetworkLogSerializer(data={"logs": line})
-                if not serializer.is_valid():
-                    continue
-                logs = serializer.save()
-                for log in (logs if isinstance(logs, list) else [logs]):
-                    analysis = detection_service.analyze_log(log)
-                    if analysis.get("is_suspicious"):
-                        threats += 1
-                    else:
-                        clean += 1
-
-            upload.threats_found = threats
-            upload.clean_logs = clean
-            upload.status = "completed"
-            upload.save(update_fields=["threats_found", "clean_logs", "status"])
-            return Response(UploadedFileSerializer(upload).data)
-        except Exception as e:
-            upload.status = "failed"
-            upload.error_message = str(e)
-            upload.save(update_fields=["status", "error_message"])
-            return Response({"error": "Failed to analyze file", "details": str(e)}, status=500)
+        queue_info = enqueue_analysis_job(upload.id, force=force)
+        return Response(
+            {
+                **UploadedFileSerializer(upload).data,
+                "queued": queue_info["queued"],
+                "already_queued": queue_info["already_queued"],
+                "queue_position": queue_info["position"],
+            },
+            status=202,
+        )
 
 
 class LogUploadMarkFailedView(APIView):
@@ -577,6 +668,14 @@ class LogUploadMarkFailedView(APIView):
         upload = UploadedFile.objects.filter(id=upload_id).first()
         if not upload:
             return Response({"error": "Upload not found"}, status=404)
+
+        with analysis_queue_lock:
+            if upload_id in analysis_queue_state:
+                analysis_queue_state.pop(upload_id, None)
+                # rebuild queue without this upload
+                filtered = [(uid, frc) for uid, frc in analysis_queue if uid != upload_id]
+                analysis_queue.clear()
+                analysis_queue.extend(filtered)
 
         reason = request.data.get("error_message") if isinstance(request.data, dict) else None
         upload.status = "failed"
