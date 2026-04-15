@@ -43,8 +43,21 @@ export function ReportsHistoryTable({ history = [], onDownload }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div
+        className="overflow-x-auto max-h-[500px] overflow-y-auto"
+        style={{
+          scrollbarWidth: "none",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.scrollbarWidth = "thin";
+          e.currentTarget.style.scrollbarColor = "#334155 #1E293B";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.scrollbarWidth = "none";
+        }}
+      >
+ 
+        <table className="w-full h-full">
           <thead>
             <tr className="border-b border-[#334155]">
               {[

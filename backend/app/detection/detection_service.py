@@ -2,6 +2,7 @@ from app.alerts.models import Alert
 from app.ws.broadcaster import broadcast_log_event
 from ml_engine.detection.decision_engine import DecisionEngine
 from django.conf import settings
+import warnings
 
 _engine = DecisionEngine(
     settings.ML_MODEL_PATH, 
@@ -33,7 +34,13 @@ class DetectionService:
             "process": log_instance.process or "",
         }
 
-        analysis = self.engine.analyze(log_data) 
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r".*sklearn\.utils\.parallel\.delayed.*",
+                category=UserWarning,
+            )
+            analysis = self.engine.analyze(log_data)
 
         log_instance.is_suspicious = analysis["is_suspicious"]
         log_instance.ml_score = analysis.get("confidence_score", 0.0)
@@ -42,7 +49,7 @@ class DetectionService:
         if analysis["is_suspicious"]:
             self._create_alert(log_instance, analysis)
             ai_info = analysis.get("ai_analysis") or {}
-            log_instance.log_type = f"Suspicious, Level: {ai_info.get("severity")}" 
+            log_instance.log_type = f"Suspicious, Level: {ai_info.get('severity')}" 
         else:
             log_instance.log_type = "Informational/Normal"
             
