@@ -11,6 +11,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 
 from datetime import datetime, time, timedelta
 
@@ -90,6 +91,7 @@ class LogIngestView(APIView):
     
     
 class AlertListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     
     serializer_class = AlertSerializer
     pagination_class = AlertPagination
@@ -111,6 +113,7 @@ class DashboardStatsView(APIView):
     """
     Return aggregated statistics for the dashboard.
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
@@ -212,6 +215,7 @@ class DashboardStatsView(APIView):
 
 # Threats Page
 class ThreatsStatsView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         alerts = Alert.objects.all()
         last_24h = timezone.now() - timedelta(hours=24)
@@ -265,6 +269,7 @@ class ThreatsStatsView(APIView):
 
 # Network Page
 class NetworkStatsView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         last_7d = timezone.now() - timedelta(days=7)
         alerts = Alert.objects.filter(created_at__gte=last_7d)
@@ -452,6 +457,7 @@ class LogUploadView(APIView):
     
 # Analytics Page
 class AnalyticsView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         logs = NetworkLog.objects.all()
         threshold = 0.5
@@ -535,6 +541,7 @@ class AnalyticsView(APIView):
         
 # Reports Page
 class ReportView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         start = request.data.get("start_date")
         end = request.data.get("end_date")
@@ -608,6 +615,7 @@ class ReportView(APIView):
 
 
 class ReportDownloadView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         report = Report.objects.filter(pk=pk).first()
         if not report:
@@ -627,6 +635,7 @@ class ReportDownloadView(APIView):
 
 # Settings Page
 class SettingsView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         settings_obj, _ = SystemSetting.objects.get_or_create(
             user = request.user if request.user.is_authenticated else None
@@ -648,6 +657,7 @@ class SettingsView(APIView):
 
 
 class IntegrationApiKeysView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         keys = IntegrationApiKey.objects.order_by("-created_at")
         return Response(IntegrationApiKeySerializer(keys, many=True).data)
@@ -662,6 +672,7 @@ class IntegrationApiKeysView(APIView):
 
 
 class IntegrationApiKeyDetailView(APIView):
+    permission_classes = [IsAuthenticated]
     def delete(self, request, key_id):
         key = IntegrationApiKey.objects.filter(id=key_id).first()
         if not key:
@@ -672,6 +683,7 @@ class IntegrationApiKeyDetailView(APIView):
 
 
 class TeamMembersView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         members = TeamMember.objects.order_by("-created_at")
         return Response(TeamMemberSerializer(members, many=True).data)
@@ -685,6 +697,7 @@ class TeamMembersView(APIView):
 
 
 class TeamMemberDetailView(APIView):
+    permission_classes = [IsAuthenticated]
     def patch(self, request, member_id):
         member = TeamMember.objects.filter(id=member_id).first()
         if not member:
