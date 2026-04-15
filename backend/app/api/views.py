@@ -3,7 +3,7 @@ import os
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -456,10 +456,20 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # Optimize Analytics: single query for confusion matrix and metrics
+        metrics = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+            total_logs=Count('id'),
+            anomalous=Count('id', filter=Q(is_suspicious=True))
+        )
+
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -501,14 +511,27 @@ class AnalyticsView(APIView):
         )
         
         # Confidence score distribution (buckets 0-20, 20-40 etc.)
+        # Optimized to avoid fetching all records
         buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
+        # Use database to group scores
+        score_buckets = logs.aggregate(
+            b0=Count('id', filter=Q(ml_score__gte=0, ml_score__lt=0.2)),
+            b1=Count('id', filter=Q(ml_score__gte=0.2, ml_score__lt=0.4)),
+            b2=Count('id', filter=Q(ml_score__gte=0.4, ml_score__lt=0.6)),
+            b3=Count('id', filter=Q(ml_score__gte=0.6, ml_score__lt=0.8)),
+            b4=Count('id', filter=Q(ml_score__gte=0.8))
+        )
+        buckets = [
+            score_buckets['b0'],
+            score_buckets['b1'],
+            score_buckets['b2'],
+            score_buckets['b3'],
+            score_buckets['b4']
+        ]
             
         # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        total_logs = metrics['total_logs'] or 1
+        anomalous = metrics['anomalous']
         
         return Response({
             "accuracy": accuracy,
