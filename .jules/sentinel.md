@@ -1,0 +1,4 @@
+## 2024-05-18 - [Missing DRF Global Authentication]
+**Vulnerability:** User-facing Django REST Framework endpoints in `backend/app/api/views.py` were insecure by default and accessible to the public because no `DEFAULT_PERMISSION_CLASSES` was configured in `backend/backend/settings.py`.
+**Learning:** In Django REST Framework, if `DEFAULT_PERMISSION_CLASSES` is not set globally, views default to `AllowAny`. Because of this, it's critical to either set a secure default globally, or explicitly add `permission_classes = [IsAuthenticated]` on all sensitive API views. Automated ingestion endpoints sometimes require different auth (like API keys) which makes a single global default tricky, so explicit permission declarations are often better here.
+**Prevention:** Always verify that a global permission default is set or that every view explicitly defines its required `permission_classes`.
