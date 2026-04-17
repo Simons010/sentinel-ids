@@ -1,0 +1,4 @@
+## 2024-05-24 - Missing Explicit API View Authentication
+**Vulnerability:** Django REST Framework API endpoints lacked explicit `permission_classes = [IsAuthenticated]` decorators, and `DEFAULT_PERMISSION_CLASSES` was missing from `settings.REST_FRAMEWORK`. This meant user-facing views were potentially exposed.
+**Learning:** DRF relies on `DEFAULT_PERMISSION_CLASSES` as a fallback. When it's not present in settings, all APIViews default to `AllowAny` unless explicitly secured on the class level. This codebase requires explicit class-level definitions for security, especially to distinguish between authenticated user endpoints and automated ingestion endpoints like `LogIngestView`.
+**Prevention:** Always define `permission_classes` on every new DRF API view in this codebase explicitly to prevent unauthorized access by default, and review `settings.py` for global defaults.
