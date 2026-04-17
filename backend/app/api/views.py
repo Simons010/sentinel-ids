@@ -328,7 +328,7 @@ class DashboardStatsView(APIView):
             "result": latest.attack_type,
             "description": latest.description,
             "severity": latest.severity,
-            "severity_score": round(latest.severity_score * 100/4, 1) if latest.severity_score else 0,
+            "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
             "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
         }
 
@@ -363,13 +363,14 @@ class ThreatsStatsView(APIView):
         threat_level = min(100, int((crit_count / total) * 100) + 30)
         
         # AI summary - latest alert with ai analysis
-        latest = alerts.order_by("created_at").first()
+        latest = alerts.order_by("-created_at").first()
         ai_summary = None
         if latest:
             ai_summary = {
                 "result": latest.attack_type,
                 "description": latest.description,
                 "severity": latest.severity,
+                "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
                 "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
             }
             
