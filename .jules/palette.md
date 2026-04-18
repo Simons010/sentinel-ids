@@ -1,0 +1,3 @@
+## 2024-04-18 - Notification Badge Accessibility
+**Learning:** Hardcoding static `aria-label` attributes on notification buttons containing dynamic counters (e.g., `<button aria-label="Notifications"><span aria-hidden="true">7</span></button>`) can cause screen readers to miss dynamic updates and read confusing output. Parent elements with `aria-hidden="true"` should not contain informative text like unread counts.
+**Action:** Instead of static labels on the wrapper, inject visually hidden screen-reader only (`sr-only`) text (e.g., `<span className="sr-only">Notifications, 7 unread</span>`) inside the button, and apply `aria-hidden="true"` to the purely visual icons and badges to cleanly separate visual presentation from screen-reader output.
