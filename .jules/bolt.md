@@ -1,0 +1,3 @@
+## 2024-10-25 - Replace N+1 loops with DB aggregations in time-series views
+**Learning:** Using Python loops that query the database in each iteration (like a 24-hour loop running `.count()`) causes severe N+1 problems. In Django REST Framework views, this can result in 70+ queries for a single request, heavily impacting latency and DB load.
+**Action:** Always prefer grouping at the database level using Django's `TruncHour`, `TruncDate`, or `ExtractHour` with `Count` and `Q` objects. Retrieve the aggregated results, convert them to a Python dictionary, and then do O(1) lookups in a Python loop to format the response data. This pattern turns N+1 queries into 1 or 2 queries.
