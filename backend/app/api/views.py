@@ -3,7 +3,8 @@ import os
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
+from django.db.models.functions import TruncHour, TruncDate, ExtractHour
 from django.utils import timezone
 from django.conf import settings
 
@@ -129,29 +130,38 @@ class DashboardStatsView(APIView):
         threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
         
         # Hourly breakdown for the chart (last 24 hours)
+        now = timezone.now()
+        current_hour = now.replace(minute=0, second=0, microsecond=0)
+        start_hour = current_hour - timedelta(hours=23)
+
+        # ⚡ Bolt: Replaced N+1 queries with single DB aggregations using TruncHour
+        log_aggs = logs_24h.annotate(
+            hour=TruncHour('timestamp')
+        ).values('hour').annotate(
+            normal=Count('id', filter=Q(is_suspicious=False)),
+            suspicious=Count('id', filter=Q(is_suspicious=True))
+        ).order_by()
+
+        alert_aggs = alerts_24h.annotate(
+            hour=TruncHour('created_at')
+        ).values('hour').annotate(
+            confirmed=Count('id')
+        ).order_by()
+
+        log_dict = {item['hour']: item for item in log_aggs if item['hour']}
+        alert_dict = {item['hour']: item for item in alert_aggs if item['hour']}
+
         hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+        for i in range(24):
+            hour = start_hour + timedelta(hours=i)
+            log_stats = log_dict.get(hour, {'normal': 0, 'suspicious': 0})
+            alert_stats = alert_dict.get(hour, {'confirmed': 0})
+
             hourly_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "hour": hour.strftime("%H:%M"),
+                "normal": log_stats['normal'],
+                "suspicious": log_stats['suspicious'],
+                "confirmed": alert_stats['confirmed']
             })
         
         top_sources = list(
@@ -285,16 +295,23 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
+        # ⚡ Bolt: Replaced 168 N+1 queries with a single DB aggregation
+        heatmap_aggs = alerts.annotate(
+            date=TruncDate('created_at'),
+            hour=ExtractHour('created_at')
+        ).values('date', 'hour').annotate(
+            count=Count('id')
+        ).order_by()
+
+        agg_dict = {(item['date'], item['hour']): item['count'] for item in heatmap_aggs}
+
         heatmap = []
         for days_offset in range(7):
             day = (timezone.now() - timedelta(days=6 - days_offset)).date()
             day_row = []
             for hour in range(24):
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
-                day_row.append(count)
+                day_row.append(agg_dict.get((day, hour), 0))
+
             heatmap.append({
                 "day": day.strftime("%a"),
                 "date": str(day),
@@ -468,29 +485,42 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
+
+        now = timezone.now()
+        current_hour = now.replace(minute=0, second=0, microsecond=0)
+        start_hour = current_hour - timedelta(hours=23)
+
+        logs_24h = NetworkLog.objects.filter(created_at__gte=start_hour)
+        alerts_24h = Alert.objects.filter(created_at__gte=start_hour)
+
+        # ⚡ Bolt: Replaced N+1 queries with single DB aggregations using TruncHour
+        log_aggs = logs_24h.annotate(
+            hour=TruncHour('created_at')
+        ).values('hour').annotate(
+            normal=Count('id', filter=Q(is_suspicious=False)),
+            suspicious=Count('id', filter=Q(is_suspicious=True))
+        ).order_by()
+
+        alert_aggs = alerts_24h.annotate(
+            hour=TruncHour('created_at')
+        ).values('hour').annotate(
+            confirmed=Count('id')
+        ).order_by()
+
+        log_dict = {item['hour']: item for item in log_aggs if item['hour']}
+        alert_dict = {item['hour']: item for item in alert_aggs if item['hour']}
+
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 -i)
-            hour_end = hour_start - timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+            hour = start_hour + timedelta(hours=i)
+            log_stats = log_dict.get(hour, {'normal': 0, 'suspicious': 0})
+            alert_stats = alert_dict.get(hour, {'confirmed': 0})
+
             hourly_threat_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "hour": hour.strftime("%H:%M"),
+                "normal": log_stats['normal'],
+                "suspicious": log_stats['suspicious'],
+                "confirmed": alert_stats['confirmed']
             })
         
         # Attack type distribution
