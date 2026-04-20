@@ -3,7 +3,8 @@ import os
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
+from django.db.models.functions import TruncHour, TruncDate, ExtractHour
 from django.utils import timezone
 from django.conf import settings
 
@@ -129,29 +130,30 @@ class DashboardStatsView(APIView):
         threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
         
         # Hourly breakdown for the chart (last 24 hours)
+        now = timezone.now()
+        hour_aligned_now = now.replace(minute=0, second=0, microsecond=0)
+
+        log_hourly_stats = logs_24h.annotate(hour=TruncHour('timestamp')).values('hour').annotate(
+            normal=Count('id', filter=Q(is_suspicious=False)),
+            suspicious=Count('id', filter=Q(is_suspicious=True))
+        ).order_by()
+
+        alert_hourly_stats = alerts_24h.annotate(hour=TruncHour('created_at')).values('hour').annotate(
+            confirmed=Count('id')
+        ).order_by()
+
+        log_dict = {item['hour']: item for item in log_hourly_stats if item['hour']}
+        alert_dict = {item['hour']: item for item in alert_hourly_stats if item['hour']}
+
         hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+        for i in range(24):
+            # 23 to 0 hours ago ensures we include the current hour block
+            hour_start = hour_aligned_now - timedelta(hours=23 - i)
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "normal": log_dict.get(hour_start, {}).get("normal", 0),
+                "suspicious": log_dict.get(hour_start, {}).get("suspicious", 0),
+                "confirmed": alert_dict.get(hour_start, {}).get("confirmed", 0)
             })
         
         top_sources = list(
@@ -163,16 +165,29 @@ class DashboardStatsView(APIView):
             .order_by("-count")[:5]
         )
 
+        sev_stats = alerts_24h.aggregate(
+            critical=Count('id', filter=Q(severity="critical")),
+            high=Count('id', filter=Q(severity="high")),
+            medium=Count('id', filter=Q(severity="medium")),
+            low=Count('id', filter=Q(severity="low"))
+        )
         severity_counts = {
-            s: alerts_24h.filter(severity=s).count() 
+            s: sev_stats.get(s) or 0
             for s in ["critical", "high", "medium", "low"]
         }
 
         # Ml model accuracy from analytics 
-        tp = logs_24h.filter(is_suspicious=True, ml_score__gte=0.5).count()
-        tn = logs_24h.filter(is_suspicious=False, ml_score__lt=0.5).count()
-        fp = logs_24h.filter(is_suspicious=False, ml_score__gte=0.5).count()
-        fn = logs_24h.filter(is_suspicious=True, ml_score__lt=0.5).count()
+        acc_stats = logs_24h.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=0.5)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=0.5)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=0.5)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=0.5)),
+        )
+        tp = acc_stats.get('tp') or 0
+        tn = acc_stats.get('tn') or 0
+        fp = acc_stats.get('fp') or 0
+        fn = acc_stats.get('fn') or 0
+
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp+tn) / total_classified * 100, 1) 
         
@@ -285,16 +300,29 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
+        now = timezone.now()
+
+        # Aggregate alert counts by date and hour
+        heatmap_stats = alerts.annotate(
+            date=TruncDate('created_at'),
+            hour=ExtractHour('created_at')
+        ).values('date', 'hour').annotate(count=Count('id')).order_by()
+
+        # Build dictionary for quick lookup: {date_obj: {hour: count}}
+        heatmap_dict = {}
+        for item in heatmap_stats:
+            d = item['date']
+            h = item['hour']
+            c = item['count']
+            if d not in heatmap_dict:
+                heatmap_dict[d] = {}
+            heatmap_dict[d][h] = c
+
         heatmap = []
         for days_offset in range(7):
-            day = (timezone.now() - timedelta(days=6 - days_offset)).date()
-            day_row = []
-            for hour in range(24):
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
-                day_row.append(count)
+            day = (now - timedelta(days=6 - days_offset)).date()
+            day_data = heatmap_dict.get(day, {})
+            day_row = [day_data.get(hour, 0) for hour in range(24)]
             heatmap.append({
                 "day": day.strftime("%a"),
                 "date": str(day),
@@ -456,10 +484,17 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        acc_stats = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+        )
+        tp = acc_stats.get('tp') or 0
+        tn = acc_stats.get('tn') or 0
+        fp = acc_stats.get('fp') or 0
+        fn = acc_stats.get('fn') or 0
+
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -467,30 +502,33 @@ class AnalyticsView(APIView):
         recall = round(tp / (tp + fn or 1) * 100, 1)
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
-        last_24h = timezone.now() - timedelta(hours=24)
+        now = timezone.now()
+        last_24h = now - timedelta(hours=24)
+        hour_aligned_now = now.replace(minute=0, second=0, microsecond=0)
+
+        logs_24h = NetworkLog.objects.filter(created_at__gte=last_24h)
+        alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
+
+        log_hourly_stats = logs_24h.annotate(hour=TruncHour('created_at')).values('hour').annotate(
+            normal=Count('id', filter=Q(is_suspicious=False)),
+            suspicious=Count('id', filter=Q(is_suspicious=True))
+        ).order_by()
+
+        alert_hourly_stats = alerts_24h.annotate(hour=TruncHour('created_at')).values('hour').annotate(
+            confirmed=Count('id')
+        ).order_by()
+
+        log_dict = {item['hour']: item for item in log_hourly_stats if item['hour']}
+        alert_dict = {item['hour']: item for item in alert_hourly_stats if item['hour']}
+
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 -i)
-            hour_end = hour_start - timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+            hour_start = hour_aligned_now - timedelta(hours=23 - i)
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": log_dict.get(hour_start, {}).get("normal", 0),
+                "suspicious": log_dict.get(hour_start, {}).get("suspicious", 0),
+                "confirmed": alert_dict.get(hour_start, {}).get("confirmed", 0),
             })
         
         # Attack type distribution
