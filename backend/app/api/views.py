@@ -120,6 +120,9 @@ class DashboardStatsView(APIView):
         alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
         all_alerts = Alert.objects.all()
         
+        # ⚡ Bolt Optimization: Cache counts to avoid redundant database queries
+        total_logs_24h_count = logs_24h.count()
+
         total_logs = NetworkLog.objects.count()
         total_alerts = Alert.objects.count()
         
@@ -179,11 +182,11 @@ class DashboardStatsView(APIView):
         return Response(
             {
                 # stat cards
-                "total_logs_24h": logs_24h.count(),
+                "total_logs_24h": total_logs_24h_count,
                 "active_alerts": total_alerts,
                 "critical_threats": critical_count,
                 "anomaly_detection_rate": round(
-                    logs_24h.filter(is_suspicious=True).count() / (logs_24h.count() or 1) * 100, 1
+                    logs_24h.filter(is_suspicious=True).count() / (total_logs_24h_count or 1) * 100, 1
                     ),
                 "model_accuracy": accuracy,
                 "threat_level": threat_level,
