@@ -10,6 +10,8 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
           onClick={onToggleSidebar}
           className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
           title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-expanded={!isSidebarCollapsed}
+          aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {isSidebarCollapsed ? (
             <Menu className="w-5 h-5" />
@@ -25,6 +27,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
             <input
               type="text"
               placeholder="Search logs, alerts, IPs..."
+              aria-label="Search logs, alerts, IPs..."
               className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
             />
           </div>
@@ -40,7 +43,10 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors">
+        <button
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors"
+          aria-label="Notifications, 7 unread"
+        >
           <Bell className="w-5 h-5 text-gray-400" />
           <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center">
             7
@@ -48,7 +54,10 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         </button>
 
         {/* User Profile */}
-        <button className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-[#0F172A] rounded-lg transition-colors">
+        <button
+          className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-[#0F172A] rounded-lg transition-colors"
+          aria-label="User profile menu"
+        >
           <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </div>
