@@ -8,13 +8,15 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         {/* Sidebar Toggle Button */}
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
           title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-expanded={!isSidebarCollapsed}
         >
           {isSidebarCollapsed ? (
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden="true" />
           ) : (
-            <PanelLeftClose className="w-5 h-5" />
+            <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
           )}
         </button>
 
@@ -40,15 +42,24 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-400" />
-          <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center">
+        <button
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
+          aria-label="View notifications, 7 unread"
+        >
+          <Bell className="w-5 h-5 text-gray-400" aria-hidden="true" />
+          <span
+            className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center"
+            aria-hidden="true"
+          >
             7
           </span>
         </button>
 
         {/* User Profile */}
-        <button className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-[#0F172A] rounded-lg transition-colors">
+        <button
+          className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-[#0F172A] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
+          aria-label="User Profile menu"
+        >
           <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </div>
