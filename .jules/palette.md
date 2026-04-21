@@ -1,0 +1,3 @@
+## 2024-05-18 - Keep Screen Readers in Sync with Visual Badges
+**Learning:** Hardcoding dynamic values (like unread counts) into static `aria-label` attributes creates a disconnect between the visual UI and the screen reader experience when the count updates.
+**Action:** Always inject a visually hidden `sr-only` span alongside the visual elements to ensure screen readers read the real-time dynamic value, and apply `aria-hidden="true"` to the visual badge to prevent redundant readouts.
