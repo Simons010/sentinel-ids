@@ -1,0 +1,3 @@
+## 2024-05-30 - Optimize heatmap aggregations in API views
+**Learning:** In the Django backend, aggregating time-series data with nested `.count()` queries (like fetching 7 days x 24 hours of data) causes severe N+1 query problems resulting in hundreds of DB hits per request.
+**Action:** When aggregating time-series data in Django API views, avoid N+1 query loops by grouping with `TruncHour`, `TruncDate`, or `ExtractHour` and using `.values().annotate()` combined with an empty `.order_by()` instead of looping and making multiple `.count()` queries. Also ensure standalone scripts for verification are removed before committing.
