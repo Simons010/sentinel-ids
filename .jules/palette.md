@@ -1,0 +1,3 @@
+## 2025-04-22 - [Dynamic Variables Accessibility]
+**Learning:** Hardcoding `aria-label` attributes for interactive elements that contain dynamic data (such as a notification bell with an unread count) is problematic because it fails to synchronize natively when the data updates, often leading to stale reads by screen readers.
+**Action:** Always prefer injecting visually hidden (`sr-only`) inline text next to dynamic values inside buttons or interactive elements. This approach ensures that screen readers dynamically interpret the full context natively without manual state synchronization of `aria-label`s.
