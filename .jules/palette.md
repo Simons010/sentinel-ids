@@ -1,0 +1,3 @@
+## 2024-05-24 - TopBar Notification Bell Accessibility Enhancement
+**Learning:** Using `aria-label` directly on a container that includes dynamic visible text (like an unread badge count) causes screen readers to announce ONLY the `aria-label`, skipping the dynamic count entirely, which effectively violates WCAG 2.5.3 (Label in Name).
+**Action:** Instead of placing `aria-label` on the parent `<button>`, inject a visually hidden `<span className="sr-only">View notifications</span>` inside the button, and wrap the dynamic badge text with additional hidden context (e.g., `<span className="sr-only">7 unread</span><span aria-hidden="true">7</span>`). This ensures screen readers receive the full context while keeping the visual layout intact.
