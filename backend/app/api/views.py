@@ -6,7 +6,7 @@ from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -290,11 +290,17 @@ class DashboardStatsView(APIView):
             for s in ["critical", "high", "medium", "low"]
         }
 
-        # Ml model accuracy from analytics 
-        tp = logs_24h.filter(is_suspicious=True, ml_score__gte=0.5).count()
-        tn = logs_24h.filter(is_suspicious=False, ml_score__lt=0.5).count()
-        fp = logs_24h.filter(is_suspicious=False, ml_score__gte=0.5).count()
-        fn = logs_24h.filter(is_suspicious=True, ml_score__lt=0.5).count()
+        # Ml model accuracy from analytics (optimized to single query)
+        ml_stats = logs_24h.aggregate(
+            tp=Count("id", filter=Q(is_suspicious=True, ml_score__gte=0.5)),
+            tn=Count("id", filter=Q(is_suspicious=False, ml_score__lt=0.5)),
+            fp=Count("id", filter=Q(is_suspicious=False, ml_score__gte=0.5)),
+            fn=Count("id", filter=Q(is_suspicious=True, ml_score__lt=0.5))
+        )
+        tp = ml_stats["tp"]
+        tn = ml_stats["tn"]
+        fp = ml_stats["fp"]
+        fn = ml_stats["fn"]
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp+tn) / total_classified * 100, 1) 
         
@@ -690,10 +696,17 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # Optimize ML statistics to a single query
+        ml_stats = logs.aggregate(
+            tp=Count("id", filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count("id", filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count("id", filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count("id", filter=Q(is_suspicious=True, ml_score__lt=threshold))
+        )
+        tp = ml_stats["tp"]
+        tn = ml_stats["tn"]
+        fp = ml_stats["fp"]
+        fn = ml_stats["fn"]
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)

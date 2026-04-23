@@ -1,0 +1,3 @@
+## 2026-04-23 - Optimize multi-query operations
+**Learning:** Using multiple `.count()` queries sequentially on the same queryset with varying filters (e.g., computing True Positives, True Negatives, False Positives, False Negatives) is extremely inefficient and causes multiple network roundtrips. Instead, this can be beautifully optimized into a single database hit by using `.aggregate()` combined with `Count("id", filter=Q(...))`. This delegates the heavy lifting directly to the database efficiently without looping or memory overhead.
+**Action:** Always refactor sequential identical model counts varying by conditions into a single `.aggregate()` with `Q` object filters.
