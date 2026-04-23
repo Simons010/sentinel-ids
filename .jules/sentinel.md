@@ -1,0 +1,4 @@
+## 2025-02-14 - Fix Hardcoded Django Secret Key
+**Vulnerability:** A hardcoded default for DJANGO_SECRET_KEY (`django-insecure-...`) was used as a fallback if the environment variable was missing in `backend/backend/settings.py`. This meant if misconfigured in production, it would silently fall back to an insecure, predictable secret, exposing the app to cryptographic attacks (e.g. session hijacking, CSRF bypass).
+**Learning:** Hardcoded fallbacks for cryptographic secrets provide a false sense of security and enable silent failures in production deployments where environment variables are missing.
+**Prevention:** Instead of providing insecure fallbacks, applications should immediately raise an `ImproperlyConfigured` exception when required security environment variables are missing, forcing fail-secure behavior.
