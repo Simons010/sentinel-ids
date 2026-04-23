@@ -1,0 +1,3 @@
+## 2024-05-15 - Dynamic Unread Counts in ARIA Labels
+**Learning:** Hardcoding dynamic values (like unread notification counts) into static `aria-label` attributes creates a disconnect, as the visible state may change without the label updating properly. Additionally, overwriting the parent container's `aria-label` completely replaces its inner text for screen readers.
+**Action:** Instead of hardcoding dynamic strings in `aria-label`, inject visually hidden screen-reader only (`sr-only`) text alongside the visual elements to keep screen readers in sync with the dynamically updated content, while explicitly marking purely decorative visual elements (like notification badges or icons) with `aria-hidden="true"`.
