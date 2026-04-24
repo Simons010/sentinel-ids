@@ -251,30 +251,40 @@ class DashboardStatsView(APIView):
         threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
         
         # Hourly breakdown for the chart (last 24 hours)
+        now = timezone.now()
+
+        # Optimize N+1 queries by fetching sparse columns into memory
+        logs_data = list(logs_24h.values("timestamp", "is_suspicious"))
+        alerts_data = list(alerts_24h.values("created_at"))
+
         hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+        for i in range(24):
+            hour_start = now - timedelta(hours=24 - i)
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "normal": 0,
+                "suspicious": 0,
+                "confirmed": 0
             })
+
+        for log in logs_data:
+            ts = log["timestamp"]
+            if ts:
+                delta = ts - (now - timedelta(hours=24))
+                idx = int(delta.total_seconds() // 3600)
+                if 0 <= idx < 24:
+                    if log["is_suspicious"]:
+                        hourly_data[idx]["suspicious"] += 1
+                    else:
+                        hourly_data[idx]["normal"] += 1
+
+        for alert in alerts_data:
+            ts = alert["created_at"]
+            if ts:
+                delta = ts - (now - timedelta(hours=24))
+                idx = int(delta.total_seconds() // 3600)
+                if 0 <= idx < 24:
+                    hourly_data[idx]["confirmed"] += 1
         
         top_sources = list(
             all_alerts.exclude(log__src_ip=None)
@@ -702,30 +712,40 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
+        now = timezone.now()
+
+        # Optimize N+1 queries by fetching sparse columns into memory
+        logs_data = list(NetworkLog.objects.filter(created_at__gte=last_24h).values("created_at", "is_suspicious"))
+        alerts_data = list(Alert.objects.filter(created_at__gte=last_24h).values("created_at"))
+
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+            hour_start = now - timedelta(hours=24 - i)
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": 0,
+                "suspicious": 0,
+                "confirmed": 0,
             })
+
+        for log in logs_data:
+            ts = log["created_at"]
+            if ts:
+                delta = ts - (now - timedelta(hours=24))
+                idx = int(delta.total_seconds() // 3600)
+                if 0 <= idx < 24:
+                    if log["is_suspicious"]:
+                        hourly_threat_data[idx]["suspicious"] += 1
+                    else:
+                        hourly_threat_data[idx]["normal"] += 1
+
+        for alert in alerts_data:
+            ts = alert["created_at"]
+            if ts:
+                delta = ts - (now - timedelta(hours=24))
+                idx = int(delta.total_seconds() // 3600)
+                if 0 <= idx < 24:
+                    hourly_threat_data[idx]["confirmed"] += 1
         
         # Attack type distribution
         attack_dist = list(
