@@ -40,10 +40,12 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-400" />
+        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]">
+          <span className="sr-only">Notifications</span>
+          <Bell className="w-5 h-5 text-gray-400" aria-hidden="true" />
           <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center">
-            7
+            <span aria-hidden="true">7</span>
+            <span className="sr-only">7 unread notifications</span>
           </span>
         </button>
 

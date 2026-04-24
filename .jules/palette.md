@@ -1,0 +1,3 @@
+## 2024-04-24 - Dynamic Notification Badge Accessibility
+**Learning:** Using static `aria-label` on notification icons with dynamic badges (like "7 unread") creates technical debt and can easily go out of sync when the badge number changes. Applying `aria-hidden="true"` to the parent also inappropriately hides the informative status text.
+**Action:** Always inject visually hidden screen-reader only (`sr-only`) text alongside the visual badge elements (e.g., `<span aria-hidden="true">7</span><span className="sr-only">7 unread notifications</span>`) to ensure screen readers stay perfectly synced with dynamic UI values without overriding other element contexts.
