@@ -6,7 +6,7 @@ from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -251,24 +251,19 @@ class DashboardStatsView(APIView):
         threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
         
         # Hourly breakdown for the chart (last 24 hours)
+        # Bolt: Fetch minimal sparse columns as a list to perform exact rolling 24-hour summation in memory, avoiding 72 N+1 db queries
+        logs_data = list(logs_24h.values('timestamp', 'is_suspicious'))
+        alerts_data = list(alerts_24h.values('created_at'))
+
         hourly_data = []
         for i in range (24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+
+            normal = sum(1 for log in logs_data if log['timestamp'] and hour_start <= log['timestamp'] < hour_end and not log['is_suspicious'])
+            suspicious = sum(1 for log in logs_data if log['timestamp'] and hour_start <= log['timestamp'] < hour_end and log['is_suspicious'])
+            confirmed = sum(1 for alert in alerts_data if alert['created_at'] and hour_start <= alert['created_at'] < hour_end)
+
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
                 "normal": normal,
@@ -291,10 +286,17 @@ class DashboardStatsView(APIView):
         }
 
         # Ml model accuracy from analytics 
-        tp = logs_24h.filter(is_suspicious=True, ml_score__gte=0.5).count()
-        tn = logs_24h.filter(is_suspicious=False, ml_score__lt=0.5).count()
-        fp = logs_24h.filter(is_suspicious=False, ml_score__gte=0.5).count()
-        fn = logs_24h.filter(is_suspicious=True, ml_score__lt=0.5).count()
+        # Bolt: Combine 4 sequential count queries into a single database aggregate query
+        metrics = logs_24h.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=0.5)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=0.5)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=0.5)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=0.5)),
+        )
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp+tn) / total_classified * 100, 1) 
         
@@ -690,10 +692,17 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # Bolt: Combine 4 sequential count queries into a single database aggregate query
+        metrics = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+        )
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -702,24 +711,20 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
+
+        # Bolt: Fetch minimal sparse columns as a list to perform exact rolling 24-hour summation in memory, avoiding 72 N+1 db queries
+        logs_data = list(NetworkLog.objects.filter(created_at__gte=last_24h).values('created_at', 'is_suspicious'))
+        alerts_data = list(Alert.objects.filter(created_at__gte=last_24h).values('created_at'))
+
         hourly_threat_data = []
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+
+            normal = sum(1 for log in logs_data if log['created_at'] and hour_start <= log['created_at'] < hour_end and not log['is_suspicious'])
+            suspicious = sum(1 for log in logs_data if log['created_at'] and hour_start <= log['created_at'] < hour_end and log['is_suspicious'])
+            confirmed = sum(1 for alert in alerts_data if alert['created_at'] and hour_start <= alert['created_at'] < hour_end)
+
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
                 "normal": normal,
