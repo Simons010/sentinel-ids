@@ -1,0 +1,3 @@
+## 2024-04-26 - Screen Reader Sync with Dynamic Visual Badges
+**Learning:** Dynamic visual badges (like notification counts) should not be hardcoded into static `aria-label` attributes to prevent technical debt and desync. Using `aria-hidden="true"` on the visual elements and injecting a visually hidden `<span className="sr-only">` block alongside it ensures screen readers are kept correctly in sync.
+**Action:** When implementing badges or notification counters, apply `aria-hidden="true"` to the visual container and inject `<span className="sr-only">` with the complete text context (e.g., "View notifications, 7 unread").
