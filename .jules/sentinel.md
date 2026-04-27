@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing Authentication on API Endpoints
+**Vulnerability:** Found multiple sensitive endpoints in `backend/app/api/views.py` (like `AlertListView`, `DashboardStatsView`, `LogIngestView`, etc.) that were missing authentication checks, allowing unauthenticated access to system data and operations.
+**Learning:** The `REST_FRAMEWORK` settings did not define a `DEFAULT_PERMISSION_CLASSES` fallback. While views inherit from APIView, without explicit `permission_classes`, they default to allowing all requests if there's no global config.
+**Prevention:** Always explicitly declare `permission_classes` on individual API views to ensure the principle of least privilege, especially when dealing with both human-facing (`IsAuthenticated`) and automated machine-to-machine (`HasAPIKey`) endpoints in the same file.
