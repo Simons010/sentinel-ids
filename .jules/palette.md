@@ -1,0 +1,3 @@
+## 2024-05-18 - [TopBar Notifications Button Accessibility]
+**Learning:** When dealing with buttons that contain a dynamic badge (e.g., an unread count like "7"), static `aria-label`s override the internal content for screen readers. Using a combination of visually hidden text (`sr-only`) alongside the badge content (e.g., `<span class="sr-only">Notifications, </span> <Bell aria-hidden="true" /> <span>7<span class="sr-only"> unread alerts</span></span>`) ensures the screen reader announces the context and dynamic value cohesively ("Notifications, 7 unread alerts").
+**Action:** Favor injecting `sr-only` text around dynamic content inside buttons instead of replacing the entire content block with a static `aria-label` to maintain accessibility of changing states.
