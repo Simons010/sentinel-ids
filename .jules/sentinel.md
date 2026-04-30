@@ -1,0 +1,4 @@
+## 2024-05-01 - Missing Default Authentication on DRF Views
+**Vulnerability:** Found that Django REST Framework API endpoints were missing authentication checks. `DEFAULT_PERMISSION_CLASSES` is not set in `settings.py`, and individual views in `backend/app/api/views.py` didn't have `permission_classes` explicitly defined, leaving the entire API unauthenticated.
+**Learning:** In Django REST Framework, if `DEFAULT_PERMISSION_CLASSES` is not globally set in settings, it defaults to `AllowAny`. Views need explicit `permission_classes` declarations to secure them. Also learned to use `HasAPIKey` custom permission class for machine-to-machine integrations while applying standard `IsAuthenticated` to frontend-facing API views.
+**Prevention:** Always verify DRF global settings, or manually enforce `permission_classes = [IsAuthenticated]` (or equivalent) in every newly created APIView class.
