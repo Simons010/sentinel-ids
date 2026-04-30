@@ -6,7 +6,8 @@ from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
+from django.db.models.functions import TruncHour
 from django.utils import timezone
 from django.conf import settings
 
@@ -250,31 +251,42 @@ class DashboardStatsView(APIView):
         total_24h = alerts_24h.count() or 1  # avoid division by zero
         threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
         
-        # Hourly breakdown for the chart (last 24 hours)
-        hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
-            hourly_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
-            })
+        # Hourly breakdown for the chart (last 24 hours) - Optimized to prevent N+1
+        truncated_now = timezone.now().replace(minute=0, second=0, microsecond=0)
+        start_time = truncated_now - timedelta(hours=23)
+
+        hourly_dict = {
+            start_time + timedelta(hours=i): {
+                "hour": (start_time + timedelta(hours=i)).strftime("%H:%M"),
+                "normal": 0, "suspicious": 0, "confirmed": 0
+            } for i in range(24)
+        }
+
+        # Aggregate logs using timestamp
+        log_aggregates = logs_24h.filter(timestamp__gte=start_time).annotate(
+            hour=TruncHour("timestamp")
+        ).values("hour").annotate(
+            normal_count=Count("id", filter=Q(is_suspicious=False)),
+            suspicious_count=Count("id", filter=Q(is_suspicious=True))
+        ).order_by()
+
+        for agg in log_aggregates:
+            if agg["hour"] and agg["hour"] in hourly_dict:
+                hourly_dict[agg["hour"]]["normal"] = agg["normal_count"]
+                hourly_dict[agg["hour"]]["suspicious"] = agg["suspicious_count"]
+
+        # Aggregate alerts
+        alert_aggregates = alerts_24h.filter(created_at__gte=start_time).annotate(
+            hour=TruncHour("created_at")
+        ).values("hour").annotate(
+            confirmed_count=Count("id")
+        ).order_by()
+
+        for agg in alert_aggregates:
+            if agg["hour"] and agg["hour"] in hourly_dict:
+                hourly_dict[agg["hour"]]["confirmed"] = agg["confirmed_count"]
+
+        hourly_data = list(hourly_dict.values())
         
         top_sources = list(
             all_alerts.exclude(log__src_ip=None)
@@ -702,30 +714,41 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
-        hourly_threat_data = []
-        for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
-            hourly_threat_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
-            })
+
+        # Optimized to prevent N+1 queries
+        truncated_now = timezone.now().replace(minute=0, second=0, microsecond=0)
+        start_time = truncated_now - timedelta(hours=23)
+
+        hourly_dict = {
+            start_time + timedelta(hours=i): {
+                "hour": (start_time + timedelta(hours=i)).strftime("%H:%M"),
+                "normal": 0, "suspicious": 0, "confirmed": 0
+            } for i in range(24)
+        }
+
+        log_aggregates = NetworkLog.objects.filter(created_at__gte=start_time).annotate(
+            hour=TruncHour("created_at")
+        ).values("hour").annotate(
+            normal_count=Count("id", filter=Q(is_suspicious=False)),
+            suspicious_count=Count("id", filter=Q(is_suspicious=True))
+        ).order_by()
+
+        for agg in log_aggregates:
+            if agg["hour"] and agg["hour"] in hourly_dict:
+                hourly_dict[agg["hour"]]["normal"] = agg["normal_count"]
+                hourly_dict[agg["hour"]]["suspicious"] = agg["suspicious_count"]
+
+        alert_aggregates = Alert.objects.filter(created_at__gte=start_time).annotate(
+            hour=TruncHour("created_at")
+        ).values("hour").annotate(
+            confirmed_count=Count("id")
+        ).order_by()
+
+        for agg in alert_aggregates:
+            if agg["hour"] and agg["hour"] in hourly_dict:
+                hourly_dict[agg["hour"]]["confirmed"] = agg["confirmed_count"]
+
+        hourly_threat_data = list(hourly_dict.values())
         
         # Attack type distribution
         attack_dist = list(
