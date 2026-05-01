@@ -1,0 +1,5 @@
+## 2024-05-01 - Missing Authentication on Core API Endpoints
+
+**Vulnerability:** The Django backend endpoints (`backend/app/api/views.py`) lacked proper authentication and authorization checks. User-facing views (Dashboard, Settings, Alerts) were accessible to anyone, and automated M2M endpoints (like `LogIngestView`) were completely open, allowing unauthorized log ingestion and data exposure.
+**Learning:** Broadly applying `IsAuthenticated` breaks API integrations that use keys rather than sessions, while applying API keys to UI views breaks frontend workflows. We must explicitly declare the correct permission class (`[IsAuthenticated]` vs `[HasAPIKey]`) per view since `DEFAULT_PERMISSION_CLASSES` isn't globally configured as a fallback.
+**Prevention:** Always explicitly declare `permission_classes` on individual API views in `backend/app/api/views.py`. Ensure a custom API Key permission class (`HasAPIKey`) is implemented and used for machine-to-machine ingestion endpoints, and strictly enforce `IsAuthenticated` on all user-facing views.
