@@ -1,0 +1,3 @@
+## 2024-05-18 - Optimize NetworkStatsView Heatmap Queries
+**Learning:** In Django, when fetching hourly aggregate data (e.g., for a 7-day heatmap), using nested loops to perform `.filter(...).count()` queries results in a significant N+1 query problem, making 168 separate database calls (7 days * 24 hours). This causes severe database overhead and performance degradation on massive log datasets. Using `TruncHour` alongside `Count` for aggregation is necessary.
+**Action:** Replace nested loops that call `.count()` repeatedly over time periods with a single database-level aggregation query using `TruncDate` or `TruncHour` and `.annotate(count=Count('id'))`. Remember to append an empty `.order_by()` to avoid breaking the `GROUP BY` logic due to default model ordering.

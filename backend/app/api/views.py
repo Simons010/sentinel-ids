@@ -7,6 +7,7 @@ from collections import deque
 from django.http import FileResponse
 from django.shortcuts import render
 from django.db.models import Count, Max
+from django.db.models.functions import TruncDate, ExtractHour
 from django.utils import timezone
 from django.conf import settings
 
@@ -409,14 +410,14 @@ class NetworkStatsView(APIView):
         
         # Heatmap data (hourly for last 7 days)
         heatmap = []
+        # Optimization (Bolt): Reduced 168 queries (7 days * 24 hours) to 1 query using TruncDate and ExtractHour
+        aggregated_data = alerts.annotate(date=TruncDate('created_at'), hour=ExtractHour('created_at')).values('date', 'hour').annotate(count=Count('id')).order_by()
+        counts_dict = {(item['date'], item['hour']): item['count'] for item in aggregated_data}
         for days_offset in range(7):
             day = (timezone.now() - timedelta(days=6 - days_offset)).date()
             day_row = []
             for hour in range(24):
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
+                count = counts_dict.get((day, hour), 0)
                 day_row.append(count)
             heatmap.append({
                 "day": day.strftime("%a"),
