@@ -1,0 +1,3 @@
+## 2024-05-24 - Screen Reader Support for Dynamic Values
+**Learning:** Using `aria-label` directly on a component with dynamic content (like an unread notification count) can completely override the content for screen readers, potentially hiding important dynamic context.
+**Action:** Instead of placing a static `aria-label` on the parent button, inject visually hidden text using a `sr-only` class alongside the visual icons and dynamic content (e.g., `<span className="sr-only">Notifications, </span>` before the icon and `<span className="sr-only"> unread</span>` after the number). This keeps the screen reader output natural and in sync with the visual state.
