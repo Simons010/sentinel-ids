@@ -6,7 +6,7 @@ from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -690,10 +690,16 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        aggs = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+        )
+        tp = aggs['tp']
+        tn = aggs['tn']
+        fp = aggs['fp']
+        fn = aggs['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -741,8 +747,12 @@ class AnalyticsView(APIView):
             buckets[idx] += 1
             
         # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        aggs2 = logs.aggregate(
+            total_logs=Count('id'),
+            anomalous=Count('id', filter=Q(is_suspicious=True))
+        )
+        total_logs = aggs2['total_logs'] or 1
+        anomalous = aggs2['anomalous']
         
         return Response({
             "accuracy": accuracy,
