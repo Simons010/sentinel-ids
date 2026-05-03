@@ -8,6 +8,7 @@ import {
   getTeamMembers,
   createTeamMember,
   updateTeamMember,
+  deleteTeamMember,
 } from "../../api/settings";
 import { toast } from "sonner";
 
@@ -154,6 +155,16 @@ export function useSettings() {
     }
   };
 
+  const removeMember = async (id) => {
+    try {
+      await deleteTeamMember(id);
+      setTeamMembers((prev) => prev.filter((m) => m.id !== id));
+      toast.success("Member removed");
+    } catch (e) {
+      toast.error(e.friendlyMessage || "Failed to remove team member");
+    }
+  };
+
   return {
     settings,
     loading,
@@ -169,6 +180,7 @@ export function useSettings() {
     revokeKey,
     inviteMember,
     activateMember,
+    removeMember,
     refetch: fetchSettings,
   };
 }

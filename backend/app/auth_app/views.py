@@ -2,10 +2,15 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+
+class IsD3fau1t(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.username == "d3fau1t"
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from app.users.models import UserProfile
+from app.settings_app.models import TeamMember
 
 
 def get_tokens(user):
@@ -43,6 +48,10 @@ class RegisterView(APIView):
         password   = request.data.get("password", "")
         first_name = request.data.get("first_name", "").strip()
         last_name  = request.data.get("last_name", "").strip()
+        role       = request.data.get("role", "viewer").strip()
+
+        if role not in ["admin", "analyst", "viewer"]:
+            role = "viewer"
 
         if not username or not email or not password:
             return Response(
@@ -72,7 +81,7 @@ class RegisterView(APIView):
 
         UserProfile.objects.create(
             user=user,
-            role="viewer",          # default role
+            role=role,
             is_approved=False,      # requires admin approval
         )
 
@@ -159,19 +168,21 @@ class MeView(APIView):
 
 
 class ApproveUserView(APIView):
-    """Admin-only — approve a pending user."""
-    permission_classes = [IsAuthenticated]
+    """Admin-only (specifically d3fau1t) — approve a pending user."""
+    permission_classes = [IsD3fau1t]
 
     def post(self, request, user_id):
-        if not request.user.is_superuser:
-            profile = getattr(request.user, "profile", None)
-            if not profile or profile.role != "admin":
-                return Response({"error": "Admin access required"}, status=403)
-
+        approved = request.data.get("approved", True)
         try:
             target = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=404)
+
+        if not approved:
+            # Rejection: Delete the user and their profile
+            username = target.username
+            target.delete()
+            return Response({"message": f"User {username} rejected and removed."})
 
         profile, _ = UserProfile.objects.get_or_create(user=target)
         profile.is_approved = True
@@ -179,19 +190,24 @@ class ApproveUserView(APIView):
         profile.approved_at = timezone.now()
         profile.save()
 
+        # Add to TeamMember list
+        TeamMember.objects.update_or_create(
+            email=target.email,
+            defaults={
+                "name": f"{target.first_name} {target.last_name}".strip() or target.username,
+                "role": profile.role,
+                "status": "active"
+            }
+        )
+
         return Response({"message": f"{target.username} approved successfully"})
 
 
 class PendingUsersView(APIView):
-    """Admin-only — list users awaiting approval."""
-    permission_classes = [IsAuthenticated]
+    """Admin-only (specifically d3fau1t) — list users awaiting approval."""
+    permission_classes = [IsD3fau1t]
 
     def get(self, request):
-        if not request.user.is_superuser:
-            profile = getattr(request.user, "profile", None)
-            if not profile or profile.role != "admin":
-                return Response({"error": "Admin access required"}, status=403)
-
         pending = UserProfile.objects.filter(
             is_approved=False
         ).select_related("user")

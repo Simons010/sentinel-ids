@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Shield, Eye, EyeOff, Home } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
@@ -40,12 +40,21 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-8">
-          <h2 className="text-xl font-semibold text-white mb-2">
+        <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-10">
+          <h2 className="text-xl text-center font-semibold text-white mb-2">
             Welcome back
           </h2>
-          <p className="text-sm text-gray-400 mb-6">
+          <p className="text-center text-sm text-gray-400 mb-6">
             Sign in to your account to continue
+          </p>
+          <p className="text-end text-sm text-gray-400">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-[#22D3EE] hover:underline font-medium"
+            >
+              Create
+            </Link>
           </p>
 
           {error && (
@@ -106,16 +115,25 @@ export default function Login() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          <p className="text-center text-sm text-gray-400 mt-6">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="text-[#22D3EE] hover:underline font-medium"
-            >
-              Create one
-            </Link>
-          </p>
+          <div className="flex justify-between mt-6">
+            <p>
+              <Link
+                to="/home"
+                className="text-[#22D3EE] hover:underline font-medium flex items-center gap-1"
+              >
+                <Home className="w-4 h-4" /> Home
+              </Link>
+            </p>
+            <p className="text-end text-sm text-gray-400 ">
+              Forgot your password?{" "}
+              <Link
+                to="/resetPassword"
+                className="text-[#22D3EE] hover:underline font-medium "
+              >
+                Reset it
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

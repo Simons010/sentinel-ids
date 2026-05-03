@@ -13,3 +13,8 @@ export const refreshToken = (refresh) =>
   api.post("auth/refresh/", { refresh }).then((r) => r.data);
 
 export const getMe = () => api.get("auth/me/").then((r) => r.data);
+
+export const getPendingUsers = () => api.get("auth/pending/").then((r) => r.data);
+
+export const approveUser = (userId, approved) => 
+  api.post(`auth/approve/${userId}/`, { approved }).then((r) => r.data);

@@ -9,7 +9,8 @@ import {
   FileUp,
   FileText,
 } from "lucide-react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -23,6 +24,29 @@ const navItems = [
 
 export function Sidebar({ isCollapsed }) {
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const userRole = user?.role || "viewer";
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.path === "/settings") {
+      return userRole === "admin" || user?.username === "d3fau1t";
+    }
+    if (item.path === "/logsUpload") {
+      return (
+        userRole === "admin" ||
+        userRole === "analyst" ||
+        user?.username === "d3fau1t"
+      );
+    }
+    return true;
+  });
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <div
@@ -56,7 +80,7 @@ export function Sidebar({ isCollapsed }) {
 
       {/* Navigation */}
       <nav className={`flex-1 p-4 space-y-1 ${isCollapsed ? "px-2" : ""}`}>
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
@@ -86,7 +110,8 @@ export function Sidebar({ isCollapsed }) {
         className={`p-4 border-t border-[#334155] ${isCollapsed ? "px-2" : ""}`}
       >
         <button
-          className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg text-gray-400 hover:bg-[#1E293B] hover:text-white transition-all`}
+          onClick={handleLogout}
+          className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all`}
           title={isCollapsed ? "Logout" : ""}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />

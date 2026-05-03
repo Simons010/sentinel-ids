@@ -1,6 +1,7 @@
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../context/AuthContext";
 import { UserProfileCard } from "../components/settings/UserProfileCard";
+import { PendingApprovalsCard } from "../components/settings/PendingApprovalsCard";
 import { NotificationsSettingsCard } from "../components/settings/NotificationsSettingsCard";
 import { SecuritySettingsCard } from "../components/settings/SecuritySettingsCard";
 import { DatabaseSettingsCard } from "../components/settings/DatabaseSettingsCard";
@@ -18,9 +19,9 @@ export default function Settings() {
     loading,
     saving,
     error,
-    isDirty,
     apiKeys,
     teamMembers,
+    isDirty,
     setField,
     resetChanges,
     saveChanges,
@@ -28,6 +29,8 @@ export default function Settings() {
     revokeKey,
     inviteMember,
     activateMember,
+    removeMember,
+    refetch,
   } = useSettings();
 
   if (error) {
@@ -49,13 +52,28 @@ export default function Settings() {
         </p>
       </div>
 
-      <UserProfileCard user={user} />
+      {/* <UserProfileCard user={user} /> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UserProfileCard user={user} />
+        {user?.username === "d3fau1t" && (
+          <PendingApprovalsCard onActionSuccess={refetch} />
+        )}
         <NotificationsSettingsCard settings={settings} setField={setField} />
-        <SecuritySettingsCard settings={settings} setField={setField} />
+        <SecuritySettingsCard settings={settings} setField={setField} />{" "}
         <DatabaseSettingsCard settings={settings} setField={setField} />
         <AiModelsSettingsCard settings={settings} setField={setField} />
+        <ApiKeysCard
+          apiKeys={apiKeys}
+          onGenerate={generateApiKey}
+          onRevoke={revokeKey}
+        />
+        <TeamMembersCard
+          teamMembers={teamMembers}
+          onInvite={inviteMember}
+          onActivate={activateMember}
+          onRemove={removeMember}
+        />
       </div>
 
       <EmailSettingsCard settings={settings} setField={setField} />
@@ -65,18 +83,6 @@ export default function Settings() {
         saving={saving}
         onCancel={resetChanges}
         onSave={saveChanges}
-      />
-
-      <ApiKeysCard
-        apiKeys={apiKeys}
-        onRevoke={revokeKey}
-        onGenerate={generateApiKey}
-      />
-
-      <TeamMembersCard
-        teamMembers={teamMembers}
-        onInvite={inviteMember}
-        onActivate={activateMember}
       />
     </div>
   );

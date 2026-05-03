@@ -10,6 +10,7 @@ export default function Register() {
     last_name: "",
     username: "",
     email: "",
+    role: "viewer",
     password: "",
     confirmPassword: "",
   });
@@ -39,6 +40,7 @@ export default function Register() {
         password: form.password,
         first_name: form.first_name,
         last_name: form.last_name,
+        role: form.role,
       });
       setSuccess(true);
     } catch (err) {
@@ -160,6 +162,23 @@ export default function Register() {
                 />
               </div>
             ))}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                Requested Role
+              </label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="w-full bg-[#0F172A] border border-[#334155] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#22D3EE] transition-colors appearance-none cursor-pointer"
+              >
+                <option value="viewer">Viewer (Read-only access)</option>
+                <option value="analyst">
+                  Analyst (Monitor & analyze threats)
+                </option>
+                <option value="admin">Admin (Full system control)</option>
+              </select>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1.5">

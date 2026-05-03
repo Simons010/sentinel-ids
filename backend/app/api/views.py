@@ -14,7 +14,24 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+
+class IsAdminUser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or (getattr(request.user, "profile", None) and request.user.profile.role == "admin")
+
+class IsAnalystUser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        role = getattr(request.user, "profile", None).role if getattr(request.user, "profile", None) else "viewer"
+        return role in ["admin", "analyst"] or request.user.is_superuser
+
+class IsD3fau1t(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.username == "d3fau1t"
 
 from datetime import datetime, time, timedelta
 
@@ -504,6 +521,7 @@ class NetworkStatsView(APIView):
         
 # Log Upload Page
 class LogUploadView(APIView):
+    permission_classes = [IsAnalystUser]
     def post(self, request):
         file = request.FILES.get("file")
         if not file:
@@ -586,6 +604,7 @@ class LogUploadView(APIView):
 
 
 class LogUploadDetailView(APIView):
+    permission_classes = [IsAnalystUser]
     def delete(self, request, upload_id):
         upload = UploadedFile.objects.filter(id=upload_id).first()
         if not upload:
@@ -599,6 +618,7 @@ class LogUploadDetailView(APIView):
 
 
 class LogUploadPreviewView(APIView):
+    permission_classes = [IsAnalystUser]
     def get(self, request, upload_id):
         upload = UploadedFile.objects.filter(id=upload_id).first()
         if not upload:
@@ -636,6 +656,7 @@ class LogUploadPreviewView(APIView):
 
 
 class LogUploadAnalyzeView(APIView):
+    permission_classes = [IsAnalystUser]
     def post(self, request, upload_id):
         upload = UploadedFile.objects.filter(id=upload_id).first()
         if not upload:
@@ -675,6 +696,7 @@ class LogUploadAnalyzeView(APIView):
 
 
 class LogUploadMarkFailedView(APIView):
+    permission_classes = [IsAnalystUser]
     def post(self, request, upload_id):
         upload = UploadedFile.objects.filter(id=upload_id).first()
         if not upload:
@@ -871,6 +893,7 @@ class ReportDownloadView(APIView):
 
 # Settings Page
 class SettingsView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         settings_obj, _ = SystemSetting.objects.get_or_create(
             user = request.user if request.user.is_authenticated else None
@@ -892,6 +915,7 @@ class SettingsView(APIView):
 
 
 class IntegrationApiKeysView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         keys = IntegrationApiKey.objects.order_by("-created_at")
         return Response(IntegrationApiKeySerializer(keys, many=True).data)
@@ -916,6 +940,7 @@ class IntegrationApiKeyDetailView(APIView):
 
 
 class TeamMembersView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         members = TeamMember.objects.order_by("-created_at")
         return Response(TeamMemberSerializer(members, many=True).data)
@@ -938,3 +963,10 @@ class TeamMemberDetailView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+    def delete(self, request, member_id):
+        member = TeamMember.objects.filter(id=member_id).first()
+        if not member:
+            return Response({"error": "Team member not found"}, status=404)
+        member.delete()
+        return Response({"message": "Team member removed"}, status=200)

@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { InviteTeamMemberDialog } from "./InviteTeamMemberDialog";
 import { TeamMemberRow } from "./TeamMemberRow";
 
-export function TeamMembersCard({ teamMembers, onInvite, onActivate }) {
+export function TeamMembersCard({ teamMembers, onInvite, onActivate, onRemove }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -30,6 +30,7 @@ export function TeamMembersCard({ teamMembers, onInvite, onActivate }) {
                 key={member.id}
                 member={member}
                 onActivate={onActivate}
+                onRemove={onRemove}
               />
             ))
           )}
