@@ -73,7 +73,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
 
         <button
           className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
           title={`${alertCount} alerts today`}
         >
           <Bell

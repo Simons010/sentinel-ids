@@ -14,6 +14,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from datetime import datetime, time, timedelta
 
@@ -163,6 +164,8 @@ class AlertPagination(PageNumberPagination):
 
 class LogIngestView(APIView):
     
+    permission_classes = [AllowAny]
+    
     def post(self, request): 
 
         serializer = NetworkLogSerializer(data=request.data)
@@ -233,7 +236,7 @@ class DashboardStatsView(APIView):
     """
     Return aggregated statistics for the dashboard.
     """
-
+    
     def get(self, request):
 
         last_24h = timezone.now() - timedelta(hours=24)
@@ -302,7 +305,7 @@ class DashboardStatsView(APIView):
             {
                 # stat cards
                 "total_logs_24h": logs_24h.count(),
-                "alerts_24h_count": alerts_24h.count(),
+                "alerts_24h_count": alerts_24h.count(), 
                 "active_alerts": total_alerts,
                 "critical_threats": critical_count,
                 "anomaly_detection_rate": round(
@@ -389,6 +392,7 @@ class ThreatsStatsView(APIView):
 
 # Network Page
 class NetworkStatsView(APIView):
+    
     def get(self, request):
         last_7d = timezone.now() - timedelta(days=7)
         alerts = Alert.objects.filter(created_at__gte=last_7d)

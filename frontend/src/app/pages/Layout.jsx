@@ -4,6 +4,7 @@ import { TopBar } from "../components/TopBar";
 import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { EventDetailsDialog } from "../components/EventDetailsDialog";
 import { useLiveFeed } from "../hooks/useLiveFeed";
+import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useState } from "react";
 import MobileNavigation from "../components/MobileNavigation";
 
@@ -12,6 +13,9 @@ export default function Layout() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { events, connected } = useLiveFeed();
+  
+  // Initialize dashboard stats here with toasts enabled to make them system-wide
+  useDashboardStats(true);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
