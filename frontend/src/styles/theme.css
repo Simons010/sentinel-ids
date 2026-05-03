@@ -122,6 +122,30 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  *:hover {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #1e293b;
+  }
+
+  *:hover::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+  }
+
+  *:hover::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  *:hover::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
   }
 
   body {
