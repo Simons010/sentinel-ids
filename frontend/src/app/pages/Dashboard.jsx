@@ -33,7 +33,7 @@ export default function Dashboard() {
         {
           icon: Shield,
           title: "Active Alerts",
-          value: data.active_alerts?.toString() ?? "--",
+          value: data.alerts_24h_count?.toString() ?? "--",
           change: -8.2,
           sparklineData: [
             280, 275, 268, 260, 255, 252, 248, 247, 246, 247, 248, 247,
