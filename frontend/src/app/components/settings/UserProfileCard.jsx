@@ -34,15 +34,19 @@ export function UserProfileCard({ user }) {
           </div>
           <div>
             <h4 className="text-xl font-bold text-white">
-              {user.first_name ? `${user.first_name} ${user.last_name}` : user.username}
+              {user.first_name
+                ? `${user.first_name} ${user.last_name}`
+                : user.username}
             </h4>
             <div className="flex items-center gap-2 mt-1">
-              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${roleColors[user.role] || roleColors.viewer} uppercase tracking-wider`}>
+              <span
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${roleColors[user.role] || roleColors.viewer} uppercase tracking-wider`}
+              >
                 {roleIcons[user.role] || roleIcons.viewer}
                 {user.role ?? "viewer"}
               </span>
               {user.is_approved && (
-                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider">
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-600 text-white border border-blue-500/20 uppercase tracking-wider">
                   <BadgeCheck className="w-3.5 h-3.5" />
                   Verified
                 </span>
@@ -53,22 +57,32 @@ export function UserProfileCard({ user }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#334155]">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Username</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Username
+            </p>
             <p className="text-sm text-gray-200 font-mono">{user.username}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email Address</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Email Address
+            </p>
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-gray-500" />
-              <p className="text-sm text-gray-200">{user.email || "Not provided"}</p>
+              <p className="text-sm text-gray-200">
+                {user.email || "Not provided"}
+              </p>
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">First Name</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              First Name
+            </p>
             <p className="text-sm text-gray-200">{user.first_name || "—"}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Name</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Last Name
+            </p>
             <p className="text-sm text-gray-200">{user.last_name || "—"}</p>
           </div>
         </div>
