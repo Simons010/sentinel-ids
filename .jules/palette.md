@@ -1,0 +1,3 @@
+## 2024-05-24 - Screen Reader Synchronization for Dynamic Values
+**Learning:** Hardcoding dynamic values (like notification counts) into static `aria-label` attributes causes issues because screen readers often cache the initial value and fail to read updates when the visual number changes.
+**Action:** Instead of `aria-label="7 unread notifications"`, always use visually hidden text alongside the visual badge: `<span aria-hidden="true" class="badge">7</span><span class="sr-only">7 unread notifications</span>`. This ensures the screen reader always reads the current, actual DOM text rather than a potentially stale attribute.
