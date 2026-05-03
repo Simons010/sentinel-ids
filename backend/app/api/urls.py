@@ -1,5 +1,6 @@
 from django.urls import path
 from app.api.views import AlertListView, AnalyticsView, DashboardStatsView, LogIngestView, LogUploadView, LogUploadDetailView, LogUploadPreviewView, LogUploadAnalyzeView, LogUploadMarkFailedView, NetworkStatsView, ReportView, ReportDownloadView, SettingsView, ThreatsStatsView, IntegrationApiKeysView, IntegrationApiKeyDetailView, TeamMembersView, TeamMemberDetailView
+from app.auth_app.views import (LoginView, RegisterView, LogoutView, RefreshView, MeView, ApproveUserView, PendingUsersView)
 
 urlpatterns = [
     path('ingest/', LogIngestView.as_view(), name='log-ingestion'),
@@ -31,5 +32,12 @@ urlpatterns = [
     path('settings/api-keys/<int:key_id>/', IntegrationApiKeyDetailView.as_view(), name='settings-api-key-detail'),
     path('settings/team-members/', TeamMembersView.as_view(), name='settings-team-members'),
     path('settings/team-members/<int:member_id>/', TeamMemberDetailView.as_view(), name='settings-team-member-detail'),
-    path("threats/", ThreatsStatsView.as_view(), name="threats")
+    path("threats/", ThreatsStatsView.as_view(), name="threats"),
+    path("auth/register/",       RegisterView.as_view()),
+    path("auth/login/",          LoginView.as_view()),
+    path("auth/logout/",         LogoutView.as_view()),
+    path("auth/refresh/",        RefreshView.as_view()),
+    path("auth/me/",             MeView.as_view()),
+    path("auth/approve/<int:user_id>/", ApproveUserView.as_view()),
+    path("auth/pending/",        PendingUsersView.as_view()),
 ]

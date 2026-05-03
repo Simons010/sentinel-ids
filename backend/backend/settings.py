@@ -46,9 +46,12 @@ INSTALLED_APPS = [
     'daphne',
     'django.contrib.staticfiles',
     'rest_framework',
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     'corsheaders',
     'channels',
     'app.api',
+    'app.auth_app',
     'app.alerts',
     'app.detection',
     'app.logs',
@@ -185,8 +188,23 @@ ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
 FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
 
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
