@@ -6,7 +6,7 @@ from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -690,10 +690,26 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # Optimize memory usage and database trips using a single aggregate query
+        agg_data = logs.aggregate(
+            tp=Count("id", filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count("id", filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count("id", filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count("id", filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+            b0=Count("id", filter=Q(ml_score__gte=0.0, ml_score__lt=0.2)),
+            b1=Count("id", filter=Q(ml_score__gte=0.2, ml_score__lt=0.4)),
+            b2=Count("id", filter=Q(ml_score__gte=0.4, ml_score__lt=0.6)),
+            b3=Count("id", filter=Q(ml_score__gte=0.6, ml_score__lt=0.8)),
+            b4=Count("id", filter=Q(ml_score__gte=0.8)),
+            anomalous=Count("id", filter=Q(is_suspicious=True)),
+            total=Count("id")
+        )
+
+        tp = agg_data["tp"] or 0
+        tn = agg_data["tn"] or 0
+        fp = agg_data["fp"] or 0
+        fn = agg_data["fn"] or 0
+
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -734,15 +750,17 @@ class AnalyticsView(APIView):
             .order_by("-count")[:5]
         )
         
-        # Confidence score distribution (buckets 0-20, 20-40 etc.)
-        buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
+        buckets = [
+            agg_data["b0"] or 0,
+            agg_data["b1"] or 0,
+            agg_data["b2"] or 0,
+            agg_data["b3"] or 0,
+            agg_data["b4"] or 0,
+        ]
             
         # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        total_logs = agg_data["total"] or 1
+        anomalous = agg_data["anomalous"] or 0
         
         return Response({
             "accuracy": accuracy,
