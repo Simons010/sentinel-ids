@@ -7,7 +7,6 @@ from collections import deque
 from django.http import FileResponse
 from django.shortcuts import render
 from django.db.models import Count, Max, Q
-from django.db.models.functions import ExtractHour, TruncDay
 from django.utils import timezone
 from django.conf import settings
 
@@ -409,18 +408,14 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
-        # Optimized: one query to get all alerts in the range, then bucket them.
-        heatmap_data = (
-            alerts.annotate(hour=ExtractHour("created_at"), day_trunc=TruncDay("created_at"))
-            .values("day_trunc", "hour")
-            .annotate(count=Count("id"))
-        )
-        
-        # Create a lookup map for faster access
         heatmap_map = {}
-        for item in heatmap_data:
-            d_str = str(item["day_trunc"].date())
-            heatmap_map[(d_str, item["hour"])] = item["count"]
+        for a in alerts.only("created_at"):
+            # Convert to local time (Africa/Nairobi)
+            local_dt = timezone.localtime(a.created_at)
+            day_str = str(local_dt.date())
+            hour = local_dt.hour
+            key = (day_str, hour)
+            heatmap_map[key] = heatmap_map.get(key, 0) + 1
 
         heatmap = []
         for days_offset in range(7):
