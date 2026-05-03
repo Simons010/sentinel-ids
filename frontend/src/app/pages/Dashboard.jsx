@@ -1,6 +1,8 @@
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useLiveFeed } from "../hooks/useLiveFeed";
 import { LiveActivityTicker } from "../components/LiveActivityTicker";
+import { EventDetailsDialog } from "../components/EventDetailsDialog";
+import { useState } from "react";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -21,6 +23,13 @@ import { DashboardLoadingSkeleton } from "../components/PageLoadingSkeletons";
 export default function Dashboard() {
   const { data, loading, error } = useDashboardStats();
   const { events, connected } = useLiveFeed();
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setIsDialogOpen(true);
+  };
 
   // Mock data for stat cards
   const statCardsData = data
@@ -49,7 +58,7 @@ export default function Dashboard() {
           value: data.critical_threats?.toString() ?? "--",
           change: -15.3,
           sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
-          
+
           accentColor: "#EF4444",
         },
         {
@@ -123,6 +132,13 @@ export default function Dashboard() {
       </div>
       <LiveActivityTicker
         events={events.length > 0 ? events : (data?.live_feed ?? [])}
+        onEventClick={handleEventClick}
+      />
+
+      <EventDetailsDialog
+        event={selectedEvent}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
       />
 
       {/* Threat Level & Charts Row */}
