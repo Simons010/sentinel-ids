@@ -1,10 +1,6 @@
 import { useNetwork } from "../hooks/useNetwork";
-import { useLiveFeed } from "../hooks/useLiveFeed";
 import { GeographicalAttackMap } from "../components/GeographicalAttackMap";
 import { AttackHeatmap } from "../components/AttackHeatmap";
-import { LiveActivityTicker } from "../components/LiveActivityTicker";
-import { EventDetailsDialog } from "../components/EventDetailsDialog";
-import { useState } from "react";
 import { TopAttackSourcesChart } from "../components/TopAttackSourcesChart";
 import { StatCard } from "../components/StatCard";
 import { Globe, MapPin, Activity, TrendingUp } from "lucide-react";
@@ -12,14 +8,6 @@ import { NetworkLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Network() {
   const { data, loading, error } = useNetwork();
-  const { events, connected } = useLiveFeed();
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setIsDialogOpen(true);
-  };
 
   const networkStatCards = data
     ? [
@@ -90,26 +78,6 @@ export default function Network() {
           <StatCard key={index} {...card} />
         ))}
       </div>
-
-      {/* Live feed (websocket events prioritized, fall back to REST data) */}
-      <div className="flex items-center gap-2 text-sm">
-        <div
-          className={`w-2 h-2 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-400 animate-bounce"}`}
-        />
-        <span className="text-gray-400">
-          {connected ? "Live feed connected" : "Reconnecting..."}
-        </span>
-      </div>
-      <LiveActivityTicker
-        events={events.length > 0 ? events : (data?.live_feed ?? [])}
-        onEventClick={handleEventClick}
-      />
-
-      <EventDetailsDialog
-        event={selectedEvent}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-      />
 
       {/* Geographical Attack Map */}
       <GeographicalAttackMap

@@ -1,14 +1,25 @@
 import { Outlet } from "react-router";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
+import { LiveActivityTicker } from "../components/LiveActivityTicker";
+import { EventDetailsDialog } from "../components/EventDetailsDialog";
+import { useLiveFeed } from "../hooks/useLiveFeed";
 import { useState } from "react";
 import MobileNavigation from "../components/MobileNavigation";
 
 export default function Layout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { events, connected } = useLiveFeed();
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setIsDialogOpen(true);
   };
 
   return (
@@ -23,6 +34,19 @@ export default function Layout() {
         <TopBar
           onToggleSidebar={toggleSidebar}
           isSidebarCollapsed={isSidebarCollapsed}
+        />
+
+        {/* Global Live Ticker */}
+        <LiveActivityTicker 
+          events={events} 
+          connected={connected}
+          onEventClick={handleEventClick}
+        />
+
+        <EventDetailsDialog 
+          event={selectedEvent} 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen} 
         />
 
         {/* Page Content */}

@@ -7,11 +7,17 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useDashboardStats } from "../hooks/useDashboardStats";
+import { useLiveFeed } from "../hooks/useLiveFeed";
 import { useNavigate, Link } from "react-router";
 
 export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
   const { user, logout } = useAuth();
+  const { data: dashboardData } = useDashboardStats();
+  const { connected } = useLiveFeed();
   const navigate = useNavigate();
+
+  const alertCount = dashboardData?.alerts_24h_count ?? 0;
 
   const handleLogout = async () => {
     await logout();
@@ -55,15 +61,29 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
       {/* Right */}
       <div className="flex items-center gap-4 ml-6">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155]">
-          <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
-          <span className="text-sm font-medium text-[#10B981]">LIVE</span>
+          <div
+            className={`w-2 h-2 rounded-full ${connected ? "bg-[#10B981] animate-pulse" : "bg-gray-500"}`}
+          />
+          <span
+            className={`text-sm font-medium ${connected ? "text-[#10B981]" : "text-gray-500"}`}
+          >
+            {connected ? "LIVE" : "OFFLINE"}
+          </span>
         </div>
 
-        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-400" />
-          <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center">
-            7
-          </span>
+        <button
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group"
+          onClick={() => navigate("/dashboard")}
+          title={`${alertCount} alerts today`}
+        >
+          <Bell
+            className={`w-5 h-5 transition-colors ${alertCount > 0 ? "text-[#22D3EE] group-hover:text-white" : "text-gray-400"}`}
+          />
+          {alertCount > 0 && (
+            <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse border-2 border-[#1E293B]">
+              {alertCount > 99 ? "99+" : alertCount}
+            </span>
+          )}
         </button>
 
         {/* User */}

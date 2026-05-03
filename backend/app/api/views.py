@@ -302,6 +302,7 @@ class DashboardStatsView(APIView):
             {
                 # stat cards
                 "total_logs_24h": logs_24h.count(),
+                "alerts_24h_count": alerts_24h.count(),
                 "active_alerts": total_alerts,
                 "critical_threats": critical_count,
                 "anomaly_detection_rate": round(
