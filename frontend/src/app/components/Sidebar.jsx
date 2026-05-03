@@ -36,10 +36,10 @@ export function Sidebar({ isCollapsed }) {
       >
         <Link
           to="/"
-          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
+          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]`}
         >
           <div className="w-10 h-10 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-white" />
+            <Shield className="w-6 h-6 text-white" aria-hidden="true" />
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden">
@@ -63,14 +63,14 @@ export function Sidebar({ isCollapsed }) {
             <Link
               key={item.label}
               to={item.path}
-              className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all ${
+              className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE] ${
                 isActive
                   ? "bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/20"
                   : "text-gray-400 hover:bg-[#1E293B] hover:text-white"
               }`}
               title={isCollapsed ? item.label : ""}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
               {!isCollapsed && (
                 <span className="font-medium whitespace-nowrap">
                   {item.label}
@@ -86,10 +86,11 @@ export function Sidebar({ isCollapsed }) {
         className={`p-4 border-t border-[#334155] ${isCollapsed ? "px-2" : ""}`}
       >
         <button
-          className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg text-gray-400 hover:bg-[#1E293B] hover:text-white transition-all`}
+          className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg text-gray-400 hover:bg-[#1E293B] hover:text-white transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]`}
           title={isCollapsed ? "Logout" : ""}
+          aria-label="Logout"
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           {!isCollapsed && (
             <span className="font-medium whitespace-nowrap">Logout</span>
           )}
