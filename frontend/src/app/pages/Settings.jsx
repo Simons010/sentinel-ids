@@ -1,4 +1,6 @@
 import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../context/AuthContext";
+import { UserProfileCard } from "../components/settings/UserProfileCard";
 import { NotificationsSettingsCard } from "../components/settings/NotificationsSettingsCard";
 import { SecuritySettingsCard } from "../components/settings/SecuritySettingsCard";
 import { DatabaseSettingsCard } from "../components/settings/DatabaseSettingsCard";
@@ -10,6 +12,7 @@ import { TeamMembersCard } from "../components/settings/TeamMembersCard";
 import { SettingsLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Settings() {
+  const { user } = useAuth();
   const {
     settings,
     loading,
@@ -47,13 +50,13 @@ export default function Settings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UserProfileCard user={user} />
         <NotificationsSettingsCard settings={settings} setField={setField} />
         <SecuritySettingsCard settings={settings} setField={setField} />
         <DatabaseSettingsCard settings={settings} setField={setField} />
         <AiModelsSettingsCard settings={settings} setField={setField} />
+        <EmailSettingsCard settings={settings} setField={setField} />
       </div>
-
-      <EmailSettingsCard settings={settings} setField={setField} />
 
       <SettingsSaveBar
         isDirty={isDirty}

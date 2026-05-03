@@ -1,6 +1,13 @@
-import { Search, Bell, Menu, PanelLeftClose, LogOut } from "lucide-react";
+import {
+  Search,
+  Bell,
+  Menu,
+  PanelLeftClose,
+  LogOut,
+  User as UserIcon,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
   const { user, logout } = useAuth();
@@ -61,26 +68,29 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
 
         {/* User */}
         <div className="flex items-center gap-3 pl-3 pr-2 py-2 bg-[#0F172A] rounded-lg border border-[#334155]">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold text-white">
-              {user?.initials ?? "?"}
-            </span>
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-medium text-white leading-tight">
-              {user?.first_name
-                ? `${user.first_name} ${user.last_name}`
-                : (user?.username ?? "User")}
-            </p>
-            <span
-              className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize ${roleBadgeColor}`}
-            >
-              {user?.role ?? "viewer"}
-            </span>
-          </div>
+          <Link to="/settings" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center group-hover:shadow-lg group-hover:shadow-[#22D3EE]/30 transition-all">
+              <span className="text-xs font-bold text-white">
+                {user?.initials ?? "?"}
+              </span>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-white leading-tight group-hover:text-[#22D3EE] transition-colors">
+                {user?.first_name
+                  ? `${user.first_name} ${user.last_name}`
+                  : (user?.username ?? "User")}
+              </p>
+              <span
+                className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize ${roleBadgeColor}`}
+              >
+                {user?.role ?? "viewer"}
+              </span>
+            </div>
+          </Link>
+          <div className="w-px h-8 bg-[#334155] mx-1" />
           <button
             onClick={handleLogout}
-            className="ml-1 p-1.5 hover:bg-[#334155] rounded-lg transition-colors text-gray-400 hover:text-[#EF4444]"
+            className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors text-gray-400 hover:text-[#EF4444]"
             title="Sign out"
           >
             <LogOut className="w-4 h-4" />
