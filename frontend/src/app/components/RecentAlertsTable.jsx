@@ -8,6 +8,7 @@ export function RecentAlertsTable({
   setPage,
   search,
   setSearch,
+  onViewDetails,
 }) {
   const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalAlerts / PAGE_SIZE);
@@ -25,6 +26,7 @@ export function RecentAlertsTable({
     severity: a.severity?.charAt(0).toUpperCase() + a.severity?.slice(1),
     confidence: a.log_details?.ml_score ?? 0,
     status: a.log_details?.is_suspicious ? "Active" : "Resolved",
+    original: a, // Store original object for the details modal
   }));
 
   const getSeverityColor = (s) =>
@@ -143,7 +145,13 @@ export function RecentAlertsTable({
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <button className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors">
+                    <button
+                      onClick={() =>
+                        onViewDetails && onViewDetails(alert.original)
+                      }
+                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                      title="View Details"
+                    >
                       <Eye className="w-4 h-4 text-[#22D3EE]" />
                     </button>
                   </td>

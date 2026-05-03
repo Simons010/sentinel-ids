@@ -8,17 +8,17 @@ import {
 } from "./ui/dialog";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { 
-  Shield, 
-  AlertTriangle, 
-  Eye, 
-  Info, 
-  Clock, 
-  MapPin, 
-  Server, 
+import {
+  Shield,
+  AlertTriangle,
+  Eye,
+  Info,
+  Clock,
+  MapPin,
+  Server,
   Cpu,
   Activity,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 
 const SEVERITY_COLORS = {
@@ -32,15 +32,16 @@ const SEVERITY_COLORS = {
 export function EventDetailsDialog({ event, open, onOpenChange }) {
   if (!event) return null;
 
-  const severityColor = SEVERITY_COLORS[event.severity] || SEVERITY_COLORS.informational;
+  const severityColor =
+    SEVERITY_COLORS[event.severity] || SEVERITY_COLORS.informational;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0F172A] border-[#1E293B] text-white">
+      <DialogContent className="sm:max-w-[500px] bg-[#1E293B] border-[#334155]  text-white">
         <DialogHeader>
           <div className="flex items-center justify-between mb-2">
             <Badge className={`uppercase font-bold ${severityColor}`}>
-              {event.severity || 'Unknown'} Severity
+              {event.severity || "Unknown"} Severity
             </Badge>
             <span className="text-xs text-gray-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -58,7 +59,9 @@ export function EventDetailsDialog({ event, open, onOpenChange }) {
         <div className="grid gap-4 py-4">
           <div className="bg-[#1E293B]/50 p-4 rounded-lg border border-[#334155]">
             <p className="text-sm text-gray-200 leading-relaxed">
-              {event.text || event.message || "No additional description available for this event."}
+              {event.text ||
+                event.message ||
+                "No additional description available for this event."}
             </p>
           </div>
 
@@ -67,24 +70,30 @@ export function EventDetailsDialog({ event, open, onOpenChange }) {
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-gray-500" />
                 <span className="text-gray-400">Source:</span>
-                <span className="font-mono text-cyan-400">{event.src_ip || 'N/A'}</span>
+                <span className="font-mono text-cyan-400">
+                  {event.src_ip || "N/A"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Target className="w-4 h-4 text-gray-500" />
                 <span className="text-gray-400">Target:</span>
-                <span className="font-mono text-emerald-400">{event.dst_ip || 'N/A'}</span>
+                <span className="font-mono text-emerald-400">
+                  {event.dst_ip || "N/A"}
+                </span>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <Server className="w-4 h-4 text-gray-500" />
                 <span className="text-gray-400">Host:</span>
-                <span className="text-gray-200">{event.host || 'N/A'}</span>
+                <span className="text-gray-200">{event.host || "N/A"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Cpu className="w-4 h-4 text-gray-500" />
                 <span className="text-gray-400">Process:</span>
-                <span className="text-gray-200">{event.process || 'N/A'} (PID: {event.pid || '?'})</span>
+                <span className="text-gray-200">
+                  {event.process || "N/A"} (PID: {event.pid || "?"})
+                </span>
               </div>
             </div>
           </div>
@@ -95,23 +104,23 @@ export function EventDetailsDialog({ event, open, onOpenChange }) {
               <span>{(event.confidence * 100).toFixed(2)}%</span>
             </div>
             <div className="h-1.5 w-full bg-[#1E293B] rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-cyan-500 rounded-full" 
+              <div
+                className="h-full bg-[#22D3EE] rounded-full"
                 style={{ width: `${event.confidence * 100}%` }}
               />
             </div>
           </div>
         </div>
 
-        <DialogFooter className="sm:justify-start gap-2">
-          <Button 
-            variant="outline" 
-            className="border-[#334155] text-gray-300 hover:bg-[#1E293B]"
+        <DialogFooter className="sm:justify-start gap-2 flex lg:justify-between">
+          <Button
+            variant="outline"
+            className="border-[#334155] bg-gray-400 hover:bg-gray-600 hover:text-zinc-300"
             onClick={() => onOpenChange(false)}
           >
             Close
           </Button>
-          <Button className="bg-cyan-600 hover:bg-cyan-700 text-white flex items-center gap-2">
+          <Button className="bg-[#22D3EE] hover:bg-[#22D3EE]/90 text-white flex items-center gap-2">
             Investigate Further
             <ChevronRight className="w-4 h-4" />
           </Button>
