@@ -722,10 +722,20 @@ class AnalyticsView(APIView):
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # ⚡ Bolt: Combine multiple .count() queries into single .aggregate()
+        # Reduces N+1-like bottlenecks by performing one DB query instead of 6
+        metrics = logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+            anomalous=Count('id', filter=Q(is_suspicious=True)),
+            total_logs=Count('id')
+        )
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -773,8 +783,8 @@ class AnalyticsView(APIView):
             buckets[idx] += 1
             
         # Anomaly Split
-        total_logs = logs.count() or 1
-        anomalous = logs.filter(is_suspicious=True).count()
+        total_logs = metrics['total_logs'] or 1
+        anomalous = metrics['anomalous']
         
         return Response({
             "accuracy": accuracy,
