@@ -1,0 +1,3 @@
+## 2025-05-05 - Password Visibility Toggle Accessibility
+**Learning:** Icon-only interactive elements like password visibility toggles often lack context for screen readers. Using `aria-label` provides the necessary context, and using Tailwind's `focus-visible` ensures that keyboard navigation does not compromise the visual design for mouse users. Additionally, purely decorative or state-reflecting icons inside such buttons must have `aria-hidden="true"` to prevent redundant or confusing screen reader announcements.
+**Action:** Always verify that icon-only buttons have descriptive `aria-label`s, `focus-visible` styling for keyboard support, and `aria-hidden="true"` on their child SVGs across all form components.
