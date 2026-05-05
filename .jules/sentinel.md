@@ -1,0 +1,4 @@
+## 2024-05-05 - Missing Authentication on Log Ingest View
+**Vulnerability:** The `LogIngestView` API endpoint in `backend/app/api/views.py` has `permission_classes = [AllowAny]`, allowing unauthenticated malicious users to ingest any amount of log data, potentially polluting the dataset, triggering false alerts, and causing denial of service.
+**Learning:** `LogIngestView` is meant for machine-to-machine ingestion. While it shouldn't use user session cookies (hence it shouldn't be `IsAuthenticated`), it shouldn't be completely open (`AllowAny`). It needs API key authorization. The backend already contains an `IntegrationApiKey` model for this.
+**Prevention:** Always verify that automated endpoints enforce API key authorization instead of being completely unprotected. Use the custom `HasAPIKey` permission class that checks the `HTTP_API_KEY` header.
