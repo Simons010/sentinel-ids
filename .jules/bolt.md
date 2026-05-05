@@ -1,0 +1,3 @@
+## 2024-05-24 - Database Aggregation Pattern
+**Learning:** In the Django backend, pulling large querysets into Python memory using `.values_list()` and iterating over them can cause severe OOM risks and performance bottlenecks on massive datasets. Multiple `.count()` queries also add unnecessary database network roundtrips.
+**Action:** Always replace Python-side looping and multiple sequential `.count()` calls with a single database-level `.aggregate()` query using `Count('id', filter=Q(...))`. Append an empty `.order_by()` to the queryset to prevent default model ordering from breaking the `GROUP BY` execution.
