@@ -1,0 +1,4 @@
+## 2024-06-25 - Fix Unauthenticated Log Ingestion Endpoint
+**Vulnerability:** The `LogIngestView` in `backend/app/api/views.py` was completely unauthenticated (`AllowAny`), allowing anyone to submit arbitrary data to the system. This is a CRITICAL vulnerability that could lead to log spoofing, DoS, and arbitrary alert generation.
+**Learning:** For machine-to-machine APIs (like log ingestion), standard session/user authentication (`IsAuthenticated`) is inappropriate. However, `AllowAny` should never be the fallback. A custom `HasAPIKey` permission class that validates against `IntegrationApiKey` is required to properly secure these endpoints while allowing automated integrations.
+**Prevention:** Never use `AllowAny` on endpoints that modify database state or trigger downstream analysis without an explicit architectural justification. Always ensure automated API endpoints are secured with API keys or similar non-user-interactive authentication.

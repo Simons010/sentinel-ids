@@ -16,6 +16,8 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 
+from app.api.permissions import HasAPIKey
+
 class IsAdminUser(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
@@ -181,7 +183,7 @@ class AlertPagination(PageNumberPagination):
 
 class LogIngestView(APIView):
     
-    permission_classes = [AllowAny]
+    permission_classes = [HasAPIKey]
     
     def post(self, request): 
 
