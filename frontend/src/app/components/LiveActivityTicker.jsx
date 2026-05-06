@@ -100,13 +100,19 @@ export function LiveActivityTicker({
     [activities],
   );
 
-  // Adjust animation duration based on content length
-  const animationDuration = Math.max(30, activities.length * 4);
+  // Adjust animation duration based on content length for constant speed
+  // Lower multiplier = faster speed
+  const animationDuration = useMemo(() => {
+    const baseSpeed = 2.5; // seconds per item
+    return Math.max(15, activities.length * baseSpeed);
+  }, [activities.length]);
 
   useEffect(() => {
     if (isPaused || !connected || activities.length === 0) {
       controls.stop();
     } else {
+      // Use a more subtle way to restart if activities change
+      // but only if we aren't already running or if the length changed significantly
       controls.start({
         x: [0, "-33.33%"],
         transition: {
@@ -116,7 +122,7 @@ export function LiveActivityTicker({
         },
       });
     }
-  }, [isPaused, activities, animationDuration, controls, connected]);
+  }, [isPaused, animationDuration, controls, connected, activities.length === 0]);
 
   return (
     <div

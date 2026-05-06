@@ -12,7 +12,10 @@ export function useLiveFeed() {
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
     try {
-      ws.current = new WebSocket("ws://localhost:8000/ws/live-feed/");
+      const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws/live-feed/";
+      ws.current = new WebSocket(wsUrl);
+      let pendingEvents = [];
+      let updateTimer = null;
 
       ws.current.onopen = () => {
         setConnected(true);
@@ -24,10 +27,19 @@ export function useLiveFeed() {
           const data = JSON.parse(e.data);
 
           if (data.type === "live-event" && data.event) {
-            setEvents((prev) => {
-              const newEvents = [data.event, ...prev];
-              return newEvents.slice(0, 50); // Keep only the latest 50 events
-            });
+            pendingEvents.push(data.event);
+
+            // Throttle updates to max once every 500ms for smoother UI
+            if (!updateTimer) {
+              updateTimer = setTimeout(() => {
+                setEvents((prev) => {
+                  const newEvents = [...prev, ...pendingEvents];
+                  pendingEvents = [];
+                  return newEvents.slice(-50); // Keep the 50 most recent events
+                });
+                updateTimer = null;
+              }, 500);
+            }
           } else if (data.type === "connection_established") {
             // Connection established successfully
           }

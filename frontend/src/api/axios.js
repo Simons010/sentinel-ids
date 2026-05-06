@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/",
+  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -32,8 +32,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
+    const isAuthRequest =
+      original.url.includes("auth/login") ||
+      original.url.includes("auth/register") ||
+      original.url.includes("auth/refresh");
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && !original._retry && !isAuthRequest) {
       original._retry = true;
       const refresh = localStorage.getItem("refresh_token");
 
@@ -58,11 +62,16 @@ api.interceptors.response.use(
       }
     }
     const status = error.response?.status;
-    const message =
+    let message =
       error.response?.data?.error ||
       error.response?.data?.detail ||
       error.message ||
       "An Unexpected error occurred";
+
+    // Standardize invalid credential message
+    if (status === 401 && isAuthRequest) {
+      message = "Invalid credentials";
+    }
 
     if (import.meta.env.DEV) {
       console.error(`x ${status} - ${message}`);

@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-x5n1%-*gnhr(!xw1%1u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,0.0.0.0').split(',')
 
 
 # Application definition
@@ -74,11 +74,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
 CORS_ALLOW_HEADERS = [
     "accept",
     "authorization",
@@ -112,12 +107,18 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = 'backend.asgi.application'
 
+# CORS
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+
 # Channel layer(Redis)
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            'hosts': [(REDIS_HOST, int(REDIS_PORT))],
         },
     },  
 }
@@ -128,11 +129,11 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DATABASE_NAME') or 'sentinel_ids',
-        'USER': os.environ.get('DATABASE_USER') or 'sentinel',
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD') or 'sentinel',
-        'HOST': os.environ.get('DATABASE_HOST') or '127.0.0.1',
-        'PORT': os.environ.get('DATABASE_PORT') or '3306',
+        'NAME': os.getenv('DATABASE_NAME', 'sentinel_ids'),
+        'USER': os.getenv('DATABASE_USER', 'sentinel'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'sentinel'),
+        'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DATABASE_PORT', '3306'),
     }
 }
 
@@ -183,7 +184,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 from pathlib import Path
 
-PROJECT_ROOT = BASE_DIR.parent
+PROJECT_ROOT = BASE_DIR
 ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
 FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
 
