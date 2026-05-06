@@ -1,5 +1,5 @@
 
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -11,15 +11,17 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install gunicorn
  
-COPY . .
+COPY backend/ .
+COPY ml_engine/ ./ml_engine/
 
-# Collect static files (optional for dev but good practice)
-# RUN python manage.py collectstatic --noinput
+RUN chmod +x wait_for_db.sh
 
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+EXPOSE 8000
+
+# Default to daphne for ASGI support (websockets)
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
