@@ -16,7 +16,7 @@ const features = [
   {
     icon: Brain,
     title: "AI-Powered Detection",
-    desc: "Claude-powered semantic analysis classifies threats with 96%+ confidence in real time.",
+    desc: "Gemini-powered semantic analysis classifies threats with 96%+ confidence in real time.",
   },
   {
     icon: Activity,
@@ -67,13 +67,13 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+              className="px-4 py-2 border border-[#22D3EE] rounded-lg text-sm text-gray-300 hover:text-white hover:border-none hover:bg-[#22D3EE] transition-colors active:bg-[#0EA5E9]"
             >
               Sign In
             </Link>
             <Link
               to="/register"
-              className="px-4 py-2 text-sm bg-[#22D3EE] text-white rounded-lg hover:bg-[#0EA5E9] transition-colors"
+              className="px-4 py-2 text-sm bg-[#22D3EE] text-white rounded-lg active:bg-[#0EA5E9] hover:bg-transparent hover:border hover:border-[#22D3EE] transition-colors"
             >
               Request Access
             </Link>
@@ -150,7 +150,7 @@ export default function Home() {
               return (
                 <div
                   key={f.title}
-                  className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 hover:border-[#22D3EE]/50 transition-all"
+                  className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 hover:border-[#22D3EE]/50 transition-all hover:scale-105"
                 >
                   <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center mb-4">
                     <Icon className="w-5 h-5 text-[#22D3EE]" />

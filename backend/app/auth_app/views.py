@@ -1,5 +1,8 @@
+import re
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
@@ -39,6 +42,24 @@ def user_data(user):
     }
 
 
+class CheckAvailabilityView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        username = request.query_params.get("username")
+        email = request.query_params.get("email")
+
+        if username:
+            exists = User.objects.filter(username=username).exists()
+            return Response({"available": not exists})
+        
+        if email:
+            exists = User.objects.filter(email=email).exists()
+            return Response({"available": not exists})
+
+        return Response({"error": "Provide username or email"}, status=400)
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -53,21 +74,46 @@ class RegisterView(APIView):
         if role not in ["admin", "analyst", "viewer"]:
             role = "viewer"
 
+        # Mandatory Fields
         if not username or not email or not password:
             return Response(
                 {"error": "Username, email and password are required"},
                 status=400
             )
 
+        # Email Format
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({"error": "Invalid email format"}, status=400)
+
+        # Username Constraints
+        if len(username) < 6 or len(username) > 30:
+            return Response({"error": "Username must be between 6 and 30 characters"}, status=400)
+        
+        if not re.match(r"^[a-zA-Z0-9_.-]+$", username):
+            return Response({"error": "Username can only contain alphanumeric characters, dots, underscores, and hyphens"}, status=400)
+
+        # Uniqueness
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already taken"}, status=400)
 
         if User.objects.filter(email=email).exists():
             return Response({"error": "Email already registered"}, status=400)
 
+        # Password Strength
         if len(password) < 8:
             return Response(
                 {"error": "Password must be at least 8 characters"},
+                status=400
+            )
+        
+        if not re.search(r"[A-Z]", password) or \
+           not re.search(r"[a-z]", password) or \
+           not re.search(r"[0-9]", password) or \
+           not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            return Response(
+                {"error": "Password must include uppercase, lowercase, numbers, and special characters"},
                 status=400
             )
 

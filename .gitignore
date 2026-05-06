@@ -42,6 +42,7 @@ data/
 .vscode/
 .idea/
 .github/
+.git-commit-message.md
 
 # OS
 .DS_Store
