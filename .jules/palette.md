@@ -1,0 +1,3 @@
+## 2024-06-19 - Dynamic Content in ARIA Labels
+**Learning:** Using string interpolation with dynamic values (like notification counts) in static `aria-label` attributes causes screen readers to fall out of sync or announce outdated information if the attribute isn't explicitly updated via React state changes cleanly, and can create messy DOM attributes.
+**Action:** Use a visually hidden `sr-only` text element within the button to house the dynamic text (e.g. `Notifications, {alertCount} alerts today`) and add `aria-hidden="true"` to the decorative icon and the visual badge. This keeps the screen reader output natively in sync with the React component's standard rendering cycle.
