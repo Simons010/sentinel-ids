@@ -33,7 +33,7 @@ class IsD3fau1t(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.username == "d3fau1t"
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
@@ -248,6 +248,28 @@ class AlertListView(generics.ListAPIView):
 
         return queryset 
 
+class LogListView(generics.ListAPIView):
+    serializer_class = NetworkLogSerializer
+    pagination_class = AlertPagination
+
+    def get_queryset(self):
+        queryset = NetworkLog.objects.all().order_by("-timestamp")
+        
+        # Log to debug why logs might be empty
+        # print(f"DEBUG: Total NetworkLogs in DB: {NetworkLog.objects.count()}")
+        
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(src_ip__icontains=search) | 
+                Q(dst_ip__icontains=search) | 
+                Q(protocol__icontains=search) |
+                Q(message__icontains=search) |
+                Q(log_type__icontains=search) |
+                Q(raw_log__icontains=search)
+            )
+        return queryset
+
 # Dashboard
 class DashboardStatsView(APIView): 
     """
@@ -265,10 +287,18 @@ class DashboardStatsView(APIView):
         total_logs = NetworkLog.objects.count()
         total_alerts = Alert.objects.count()
         
-        #Threat level score (0-100) based on critical alert ratio
-        critical_count = alerts_24h.filter(severity="critical").count()
-        total_24h = alerts_24h.count() or 1  # avoid division by zero
-        threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
+        # Threat level score (0-100) based on weighted severity of alerts in the last 24h
+        from django.db.models import Sum
+        
+        # Weighted sum: Critical=4, High=3, Medium=2, Low=1
+        total_24h = alerts_24h.count()
+        if total_24h > 0:
+            weighted_sum = alerts_24h.aggregate(s=Sum('severity_score'))['s'] or 0
+            # Normalize: (weighted_sum / (total_count * max_severity)) * 100
+            # This gives a 0-100 score where 100 is "all critical"
+            threat_level = min(100, int((weighted_sum / (total_24h * 4)) * 100))
+        else:
+            threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
         hourly_data = []
@@ -310,13 +340,18 @@ class DashboardStatsView(APIView):
             for s in ["critical", "high", "medium", "low"]
         }
 
-        # Ml model accuracy from analytics 
-        tp = logs_24h.filter(is_suspicious=True, ml_score__gte=0.5).count()
-        tn = logs_24h.filter(is_suspicious=False, ml_score__lt=0.5).count()
-        fp = logs_24h.filter(is_suspicious=False, ml_score__gte=0.5).count()
-        fn = logs_24h.filter(is_suspicious=True, ml_score__lt=0.5).count()
+        # Model accuracy from all-time logs for consistency across pages
+        from django.db.models.functions import Greatest
+        threshold = 0.5
+        all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
+        
+        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
+        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
+        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
+        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        
         total_classified = tp + tn + fp + fn or 1
-        accuracy = round((tp+tn) / total_classified * 100, 1) 
+        accuracy = round((tp + tn) / total_classified * 100, 1) 
         
         return Response(
             {
@@ -324,7 +359,7 @@ class DashboardStatsView(APIView):
                 "total_logs_24h": logs_24h.count(),
                 "alerts_24h_count": alerts_24h.count(), 
                 "active_alerts": total_alerts,
-                "critical_threats": critical_count,
+                "critical_threats": severity_counts.get("critical", 0),
                 "anomaly_detection_rate": round(
                     logs_24h.filter(is_suspicious=True).count() / (logs_24h.count() or 1) * 100, 1
                     ),
@@ -345,12 +380,18 @@ class DashboardStatsView(APIView):
         latest = Alert.objects.all().order_by("-created_at").first()
         if not latest:
             return None
+        
+        # Use ai_score if available, else fallback to ml_score
+        confidence = 0
+        if latest.log:
+            confidence = latest.log.ai_score if latest.log.ai_score > 0 else latest.log.ml_score
+
         return {
             "result": latest.attack_type,
             "description": latest.description,
             "severity": latest.severity,
             "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
-            "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
+            "confidence": round(confidence * 100, 1),
         }
 
 # Threats Page
@@ -378,21 +419,30 @@ class ThreatsStatsView(APIView):
             for s in ["critical", "high", "medium", "low", "informational"]
         }
         
-        # Threat level score
-        total = alerts_24h.count() or 1
-        crit_count = alerts_24h.filter(severity="critical").count()
-        threat_level = min(100, int((crit_count / total) * 100) + 30)
+        # Threat level score (0-100) based on weighted severity of alerts in the last 24h
+        from django.db.models import Sum
+        total_24h = alerts_24h.count()
+        if total_24h > 0:
+            weighted_sum = alerts_24h.aggregate(s=Sum('severity_score'))['s'] or 0
+            threat_level = min(100, int((weighted_sum / (total_24h * 4)) * 100))
+        else:
+            threat_level = 0
         
         # AI summary - latest alert with ai analysis
         latest = alerts.order_by("-created_at").first()
         ai_summary = None
         if latest:
+            # Use ai_score if available, else fallback to ml_score
+            confidence = 0
+            if latest.log:
+                confidence = latest.log.ai_score if latest.log.ai_score > 0 else latest.log.ml_score
+                
             ai_summary = {
                 "result": latest.attack_type,
                 "description": latest.description,
                 "severity": latest.severity,
                 "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
-                "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
+                "confidence": round(confidence * 100, 1),
             }
             
         return Response({
@@ -719,13 +769,20 @@ class LogUploadMarkFailedView(APIView):
 # Analytics Page
 class AnalyticsView(APIView):
     def get(self, request):
+        from django.db.models.functions import Greatest
+        from django.db.models import Case, When, Value, IntegerField, Avg, Q
+
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # We use effective_score (max of AI and ML) to evaluate the system's "AI confidence"
+        # against the final system decision (is_suspicious)
+        annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
+        
+        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
+        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
+        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
+        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -767,13 +824,36 @@ class AnalyticsView(APIView):
         )
         
         # Confidence score distribution (buckets 0-20, 20-40 etc.)
-        buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
+        from django.db.models import Case, When, Value, IntegerField, Avg
+        from django.db.models.functions import Greatest
+        
+        # Filter to only logs that are suspicious or have some confidence score
+        # This ensures the distribution reflects actual alerts/detections
+        suspicious_logs = logs.filter(Q(is_suspicious=True) | Q(ai_score__gt=0) | Q(ml_score__gt=0))
+        
+        # Use the best available score for each log (AI score takes precedence if it was just added)
+        dist_data = suspicious_logs.annotate(
+            effective_score=Greatest('ai_score', 'ml_score'),
+            bucket=Case(
+                When(effective_score__lt=0.2, then=Value(0)),
+                When(effective_score__lt=0.4, then=Value(1)),
+                When(effective_score__lt=0.6, then=Value(2)),
+                When(effective_score__lt=0.8, then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            )
+        ).values('bucket').annotate(count=Count('id')).order_by('bucket')
+        
+        buckets = [0] * 5
+        for item in dist_data:
+            buckets[item['bucket']] = item['count']
             
+        avg_confidence = suspicious_logs.annotate(
+            effective_score=Greatest('ai_score', 'ml_score')
+        ).aggregate(avg=Avg('effective_score'))['avg'] or 0
+        
         # Anomaly Split
-        total_logs = logs.count() or 1
+        total_logs = total
         anomalous = logs.filter(is_suspicious=True).count()
         
         return Response({
@@ -781,6 +861,7 @@ class AnalyticsView(APIView):
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
+            "avg_confidence": round(avg_confidence * 100, 1),
             "hourly_threat_data": hourly_threat_data,
             "confusion_matrix": {"tp": tp, "tn": tn, "fp": fp, "fn": fn},
             "attack_type_distribution": attack_dist,
@@ -832,8 +913,8 @@ class ReportView(APIView):
             return Response({"error": "start_date must be on or before end_date"}, status=400)
 
         # DateTimeField + USE_TZ: store aware datetimes (start of first day, end of last day)
-        start_at = timezone.make_aware(datetime.combine(start_dt, time.min))
-        end_at = timezone.make_aware(datetime.combine(end_dt, time.max))
+        start_at = timezone.make_aware(datetime(start_dt.year, start_dt.month, start_dt.day))
+        end_at = timezone.make_aware(datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 999999))
         
         logs = logs_for_report_range(start_at, end_at)
         alerts = alerts_for_report_range(start_at, end_at)

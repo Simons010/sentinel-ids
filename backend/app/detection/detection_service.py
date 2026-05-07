@@ -44,7 +44,13 @@ class DetectionService:
 
         log_instance.is_suspicious = analysis["is_suspicious"]
         log_instance.ml_score = analysis.get("confidence_score", 0.0)
-        log_instance.save(update_fields=["is_suspicious", "ml_score"])
+        
+        # Capture specific AI confidence if available
+        ai_analysis = analysis.get("ai_analysis")
+        if isinstance(ai_analysis, dict):
+            log_instance.ai_score = float(ai_analysis.get("confidence", 0.0))
+            
+        log_instance.save(update_fields=["is_suspicious", "ml_score", "ai_score"])
 
         if analysis["is_suspicious"]:
             self._create_alert(log_instance, analysis)
