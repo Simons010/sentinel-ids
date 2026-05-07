@@ -38,12 +38,12 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,0.0.0.0'
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'daphne',
     'django.contrib.staticfiles',
     'rest_framework',
     "rest_framework_simplejwt",
@@ -108,7 +108,8 @@ TEMPLATES = [
 ASGI_APPLICATION = 'backend.asgi.application'
 
 # CORS
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
 
 # Channel layer(Redis)
 REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
@@ -118,7 +119,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [(REDIS_HOST, int(REDIS_PORT))],
+            'hosts': [f"redis://{REDIS_HOST}:{REDIS_PORT}/0"],
+            'symmetric_encryption_keys': [SECRET_KEY],
         },
     },  
 }
@@ -184,9 +186,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 from pathlib import Path
 
-PROJECT_ROOT = BASE_DIR
+# Use the repository root for ML model paths
+PROJECT_ROOT = BASE_DIR.parent
 ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
 FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
+
+# Fallback for Docker environment where ml_engine might be inside the backend folder
+if not ML_MODEL_PATH.exists() and (BASE_DIR / "ml_engine").exists():
+    PROJECT_ROOT = BASE_DIR
+    ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
+    FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

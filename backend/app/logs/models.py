@@ -26,6 +26,7 @@ class NetworkLog(models.Model):
     
     # ML/Detection Results 
     ml_score = models.FloatField(default=0.0)
+    ai_score = models.FloatField(default=0.0)
     is_suspicious = models.BooleanField(default=False)
     log_type = models.TextField(null=True, blank=True)
 
