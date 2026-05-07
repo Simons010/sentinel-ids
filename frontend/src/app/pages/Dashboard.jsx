@@ -1,4 +1,5 @@
 import { useDashboardStats } from "../hooks/useDashboardStats";
+import { useLiveFeed } from "../hooks/useLiveFeed";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -17,7 +18,8 @@ import {
 import { DashboardLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Dashboard() {
-  const { data, loading, error } = useDashboardStats();
+  const { data, loading, error: apiError } = useDashboardStats();
+  const { connected: wsConnected } = useLiveFeed();
 
   // Mock data for stat cards
   const statCardsData = data
@@ -46,7 +48,6 @@ export default function Dashboard() {
           value: data.critical_threats?.toString() ?? "--",
           change: -15.3,
           sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
-
           accentColor: "#EF4444",
         },
         {
@@ -81,10 +82,14 @@ export default function Dashboard() {
       ]
     : [];
 
-  if (error)
+  const isApiLive = !!data && !apiError;
+  const systemStatus = isApiLive ? "All systems operational" : "System Offline";
+  const statusColor = isApiLive ? "bg-[#10B981]" : "bg-red-500";
+
+  if (apiError)
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-red-400">{error}</p>
+        <p className="text-red-400">{apiError}</p>
       </div>
     );
 
@@ -140,10 +145,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between text-sm text-gray-400">
           <p>© 2026 Sentinel-IDS. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <span>Last system sync: 30 seconds ago</span>
+            <span>Last system sync: {loading ? "Syncing..." : "Just now"}</span>
             <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
-              All systems operational
+              <div
+                className={`w-2 h-2 rounded-full animate-pulse ${statusColor}`}
+              />
+              {systemStatus}
             </span>
           </div>
         </div>

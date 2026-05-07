@@ -13,11 +13,16 @@ import { useNavigate, Link } from "react-router";
 
 export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
   const { user, logout } = useAuth();
-  const { data: dashboardData } = useDashboardStats();
-  const { connected } = useLiveFeed();
+  const { data: dashboardData, error: apiError } = useDashboardStats();
+  const { connected: wsConnected } = useLiveFeed();
   const navigate = useNavigate();
 
   const alertCount = dashboardData?.alerts_24h_count ?? 0;
+
+  const isApiLive = !!dashboardData && !apiError;
+  const systemStatus = isApiLive ? "LIVE" : "OFFLINE";
+  const statusColor = isApiLive ? "text-[#10B981]" : "text-gray-500";
+  const dotColor = isApiLive ? "bg-[#10B981]" : "bg-gray-500";
 
   const handleLogout = async () => {
     await logout();
@@ -60,15 +65,26 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
 
       {/* Right */}
       <div className="flex items-center gap-4 ml-6">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155]">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155] cursor-help group"
+          title={
+            !wsConnected && isApiLive
+              ? "System is LIVE, but live ticker is currently disconnected"
+              : "System Status"
+          }
+        >
           <div
-            className={`w-2 h-2 rounded-full ${connected ? "bg-[#10B981] animate-pulse" : "bg-gray-500"}`}
+            className={`w-2 h-2 rounded-full ${isApiLive ? "animate-pulse" : ""} ${dotColor}`}
           />
-          <span
-            className={`text-sm font-medium ${connected ? "text-[#10B981]" : "text-gray-500"}`}
-          >
-            {connected ? "LIVE" : "OFFLINE"}
+          <span className={`text-sm font-medium ${statusColor}`}>
+            {systemStatus}
           </span>
+          {!wsConnected && isApiLive && (
+            <div
+              className="w-1.5 h-1.5 rounded-full bg-yellow-500 ml-1"
+              title="Ticker Offline"
+            />
+          )}
         </div>
 
         <button

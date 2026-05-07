@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics.jsx";
 import Settings from "./pages/Settings.jsx";
 import Reports from "./pages/Reports.jsx";
 import LogsUpload from "./pages/LogsUpload.jsx";
+import Explorer from "./pages/Explorer.jsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 
 export const router = createBrowserRouter([
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
       { index: true, Component: Dashboard },
       { path: "threats", Component: Threats },
       { path: "network", Component: Network },
+      { path: "explorer", Component: Explorer },
       { path: "analytics", Component: Analytics },
       { path: "settings", Component: Settings },
       { path: "logsUpload", Component: LogsUpload },

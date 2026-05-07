@@ -5,7 +5,7 @@ import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { EventDetailsDialog } from "../components/EventDetailsDialog";
 import { useLiveFeed } from "../hooks/useLiveFeed";
 import { useDashboardStats } from "../hooks/useDashboardStats";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import MobileNavigation from "../components/MobileNavigation";
 
 export default function Layout() {
@@ -13,18 +13,18 @@ export default function Layout() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { events, connected } = useLiveFeed();
-  
+
   // Initialize dashboard stats here with toasts enabled to make them system-wide
   useDashboardStats(true);
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
 
-  const handleEventClick = (event) => {
+  const handleEventClick = useCallback((event) => {
     setSelectedEvent(event);
     setIsDialogOpen(true);
-  };
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#0F172A] overflow-hidden">
@@ -41,16 +41,17 @@ export default function Layout() {
         />
 
         {/* Global Live Ticker */}
-        <LiveActivityTicker 
-          events={events} 
+        <LiveActivityTicker
+          events={events}
           connected={connected}
           onEventClick={handleEventClick}
+          isSidebarCollapsed={isSidebarCollapsed}
         />
 
-        <EventDetailsDialog 
-          event={selectedEvent} 
-          open={isDialogOpen} 
-          onOpenChange={setIsDialogOpen} 
+        <EventDetailsDialog
+          event={selectedEvent}
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
         />
 
         {/* Page Content */}

@@ -1,5 +1,5 @@
 import { motion, useAnimationControls } from "motion/react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, memo } from "react";
 import {
   AlertTriangle,
   Shield,
@@ -57,7 +57,7 @@ const STATIC_ACTIVITIES = [
   },
 ];
 
-export function LiveActivityTicker({
+export const LiveActivityTicker = memo(function LiveActivityTicker({
   events = [],
   onEventClick,
   connected = true,
@@ -94,35 +94,52 @@ export function LiveActivityTicker({
     return STATIC_ACTIVITIES;
   }, [events, connected]);
 
-  // Duplicate activities for seamless loop (triple for safety)
-  const duplicated = useMemo(
-    () => [...activities, ...activities, ...activities],
-    [activities],
-  );
+  // Duplicate activities for seamless loop
+  const duplicated = useMemo(() => {
+    if (activities.length === 0) return [];
+    // If we have many activities, we only need to duplicate once for a seamless scroll
+    // but if we have few, we might need more to fill the screen
+    const repeat = activities.length < 10 ? 3 : 2;
+    let res = [];
+    for (let i = 0; i < repeat; i++) res = res.concat(activities);
+    return res;
+  }, [activities]);
 
   // Adjust animation duration based on content length for constant speed
-  // Lower multiplier = faster speed
   const animationDuration = useMemo(() => {
-    const baseSpeed = 2.5; // seconds per item
-    return Math.max(15, activities.length * baseSpeed);
+    const baseSpeed = 3.0; // Slightly slower for better readability in high volume
+    return Math.max(20, activities.length * baseSpeed);
   }, [activities.length]);
+
+  const lastDuration = useRef(animationDuration);
+  const isRunning = useRef(false);
 
   useEffect(() => {
     if (isPaused || !connected || activities.length === 0) {
       controls.stop();
+      isRunning.current = false;
     } else {
-      // Use a more subtle way to restart if activities change
-      // but only if we aren't already running or if the length changed significantly
+      // Always ensure animation is running if conditions met
+      // The 'controls.start' will handle the transition smoothly if already running
       controls.start({
-        x: [0, "-33.33%"],
+        x: [0, `-${100 / (duplicated.length / activities.length)}%`],
         transition: {
           duration: animationDuration,
           repeat: Infinity,
           ease: "linear",
         },
       });
+      isRunning.current = true;
+      lastDuration.current = animationDuration;
     }
-  }, [isPaused, animationDuration, controls, connected, activities.length === 0]);
+  }, [
+    isPaused,
+    connected,
+    activities.length,
+    controls,
+    animationDuration,
+    duplicated.length,
+  ]);
 
   return (
     <div
@@ -133,17 +150,18 @@ export function LiveActivityTicker({
       <div className="absolute left-0 top-0 bottom-0 px-3 flex items-center bg-[#0F172A] z-20 border-r border-[#1E293B]">
         <div className="flex items-center gap-2">
           <div
-            className={`w-2 h-2 rounded-full ${connected ? "bg-red-500 animate-pulse" : "bg-gray-600"}`}
+            className={`w-2 h-2 rounded-full ${connected ? "bg-[#10B981] animate-pulse" : "bg-yellow-500"}`}
           />
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            {connected ? "Live Feed" : "Disconnected"}
+            {connected ? "Live Feed" : "Reconnecting..."}
           </span>
         </div>
       </div>
 
       {!connected ? (
         <div className="flex items-center h-full pl-36 text-xs text-gray-500 italic ">
-          System disconnected. Live threat monitoring is offline.
+          Live threat monitoring is temporarily syncing. System remains
+          operational.
         </div>
       ) : (
         <motion.div
@@ -203,4 +221,4 @@ export function LiveActivityTicker({
       <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#0F172A] to-transparent pointer-events-none z-10" />
     </div>
   );
-}
+});

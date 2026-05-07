@@ -8,6 +8,7 @@ import {
   BarChart3,
   FileUp,
   FileText,
+  Database,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +17,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: AlertTriangle, label: "Threats", path: "/threats" },
   { icon: Globe, label: "Network", path: "/network" },
+  { icon: Database, label: "Data Explorer", path: "/explorer" },
   { icon: FileUp, label: "Logs Upload", path: "/logsUpload" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: FileText, label: "Reports", path: "/reports" },

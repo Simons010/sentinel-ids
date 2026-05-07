@@ -105,8 +105,8 @@ export default function Analytics() {
     },
   ];
 
-  // Calculate avg confidence from distribution
-  const avgConfidence =
+  // Use backend provided average confidence or fallback to calculation
+  const avgConfidence = data?.avg_confidence ?? (
     data?.confidence_distribution?.length > 0
       ? Math.round(
           data.confidence_distribution.reduce(
@@ -118,7 +118,8 @@ export default function Analytics() {
               0,
             ) || 1),
         )
-      : 0;
+      : 0
+  );
 
   return (
     <div className="space-y-6">
