@@ -1,24 +1,57 @@
-import { Search, Bell, User, Menu, PanelLeftClose } from "lucide-react";
+import {
+  Search,
+  Bell,
+  Menu,
+  PanelLeftClose,
+  LogOut,
+  User as UserIcon,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useDashboardStats } from "../hooks/useDashboardStats";
+import { useLiveFeed } from "../hooks/useLiveFeed";
+import { useNavigate, Link } from "react-router";
 
 export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
+  const { user, logout } = useAuth();
+  const { data: dashboardData, error: apiError } = useDashboardStats();
+  const { connected: wsConnected } = useLiveFeed();
+  const navigate = useNavigate();
+
+  const alertCount = dashboardData?.alerts_24h_count ?? 0;
+
+  const isApiLive = !!dashboardData && !apiError;
+  const systemStatus = isApiLive ? "LIVE" : "OFFLINE";
+  const statusColor = isApiLive ? "text-[#10B981]" : "text-gray-500";
+  const dotColor = isApiLive ? "bg-[#10B981]" : "bg-gray-500";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  const roleBadgeColor =
+    {
+      admin: "text-[#EF4444] bg-[#EF4444]/10",
+      analyst: "text-[#F59E0B] bg-[#F59E0B]/10",
+      viewer: "text-[#10B981] bg-[#10B981]/10",
+    }[user?.role] ?? "text-gray-400 bg-gray-400/10";
+
   return (
     <div className="h-16 bg-[#1E293B] border-b border-[#334155] px-6 flex items-center justify-between">
-      {/* Left Section - Toggle Button + Search */}
+      {/* Left */}
       <div className="flex items-center gap-4 flex-1 max-w-2xl">
-        {/* Sidebar Toggle Button */}
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
           title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {isSidebarCollapsed ? (
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden="true" />
           ) : (
-            <PanelLeftClose className="w-5 h-5" />
+            <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
           )}
         </button>
-
-        {/* Search */}
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -31,32 +64,81 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
         </div>
       </div>
 
-      {/* Right Section */}
+      {/* Right */}
       <div className="flex items-center gap-4 ml-6">
-        {/* Live Status */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155]">
-          <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-[#10B981]">LIVE</span>
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155] cursor-help group"
+          title={
+            !wsConnected && isApiLive
+              ? "System is LIVE, but live ticker is currently disconnected"
+              : "System Status"
+          }
+        >
+          <div
+            className={`w-2 h-2 rounded-full ${isApiLive ? "animate-pulse" : ""} ${dotColor}`}
+          />
+          <span className={`text-sm font-medium ${statusColor}`}>
+            {systemStatus}
+          </span>
+          {!wsConnected && isApiLive && (
+            <div
+              className="w-1.5 h-1.5 rounded-full bg-yellow-500 ml-1"
+              title="Ticker Offline"
+            />
+          )}
         </div>
 
-        {/* Notification Bell */}
-        <button className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-400" />
-          <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-xs rounded-full flex items-center justify-center">
-            7
-          </span>
+        <button
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+          onClick={() => navigate("/")}
+          title={`${alertCount} alerts today`}
+          aria-label="View alerts"
+        >
+          <Bell
+            className={`w-5 h-5 transition-colors ${alertCount > 0 ? "text-[#22D3EE] group-hover:text-white" : "text-gray-400"}`}
+            aria-hidden="true"
+          />
+          {alertCount > 0 && (
+            <>
+              <span className="sr-only">{alertCount} unread alerts</span>
+              <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse border-2 border-[#1E293B]" aria-hidden="true">
+                {alertCount > 99 ? "99+" : alertCount}
+              </span>
+            </>
+          )}
         </button>
 
-        {/* User Profile */}
-        <button className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-[#0F172A] rounded-lg transition-colors">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-medium text-white">Admin User</p>
-            <p className="text-xs text-gray-400">Security Analyst</p>
-          </div>
-        </button>
+        {/* User */}
+        <div className="flex items-center gap-3 pl-3 pr-2 py-2 bg-[#0F172A] rounded-lg border border-[#334155]">
+          <Link to="/settings" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center group-hover:shadow-lg group-hover:shadow-[#22D3EE]/30 transition-all">
+              <span className="text-xs font-bold text-white">
+                {user?.initials ?? "?"}
+              </span>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-white leading-tight group-hover:text-[#22D3EE] transition-colors">
+                {user?.first_name
+                  ? `${user.first_name} ${user.last_name}`
+                  : (user?.username ?? "User")}
+              </p>
+              <span
+                className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize ${roleBadgeColor}`}
+              >
+                {user?.role ?? "viewer"}
+              </span>
+            </div>
+          </Link>
+          <div className="w-px h-8 bg-[#334155] mx-1" />
+          <button
+            onClick={handleLogout}
+            className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors text-gray-400 hover:text-[#EF4444] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

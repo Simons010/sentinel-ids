@@ -2,39 +2,73 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: sentinel_ids
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: ${DATABASE_NAME:-sentinel_ids}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:-password}
+      MYSQL_USER: ${DATABASE_USER:-sentinel}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-sentinel}
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     restart: always
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: always
+
   backend:
-    build: ./backend
-    command: ["./wait_for_db.sh"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["sh", "./wait_for_db.sh"]
     volumes:
-      - ./backend:/app
-      - ./ml_engine:/app/ml_engine
       - ./datasets:/app/datasets
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_HOST=db
+      - REDIS_HOST=redis
+    develop:
+      watch:
+        - path: ./backend
+          action: sync
+          target: /app
+        - path: ./ml_engine
+          action: sync
+          target: /app/ml_engine
+        - path: ./backend/requirements.txt
+          action: rebuild
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:80"
+      - "5173:5173"
     depends_on:
       - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/
+      - VITE_WS_URL=ws://localhost:8000/ws/live-feed/
+    develop:
+      watch:
+        - path: ./frontend
+          action: sync
+          target: /app
+          ignore:
+            - node_modules/
+        - path: ./frontend/package.json
+          action: rebuild
 
 volumes:
   db_data:

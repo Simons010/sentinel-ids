@@ -43,8 +43,8 @@ export function ReportsHistoryTable({ history = [], onDownload }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+        <table className="w-full h-full">
           <thead>
             <tr className="border-b border-[#334155]">
               {[

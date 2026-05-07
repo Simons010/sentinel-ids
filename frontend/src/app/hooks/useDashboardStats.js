@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { getDashboardStats } from "../../api/dashboard";
 import { toast } from "sonner";
 
-export function useDashboardStats() {
+export function useDashboardStats(enableToasts = false) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,15 +11,21 @@ export function useDashboardStats() {
   const fetch = async () => {
     try {
       const res = await getDashboardStats();
-      if (previousRef.current) {
+      if (enableToasts && previousRef.current) {
         const previous = previousRef.current;
         if ((res.critical_threats ?? 0) > (previous.critical_threats ?? 0)) {
-          toast.warning("New critical threat detected", {
-            description: `Critical threats: ${res.critical_threats}`,
+          toast.error("Critical Threat Detected", {
+            description: `Alert level escalated. ${res.critical_threats} critical issues now active.`,
+            duration: 8000,
+            className:
+              "bg-red-500 border-red-500/50 text-white border-2 shadow-[0_0_20px_rgba(239,68,68,0.2)]",
           });
         } else if ((res.active_alerts ?? 0) > (previous.active_alerts ?? 0)) {
-          toast.info("New alert received", {
-            description: `Active alerts: ${res.active_alerts}`,
+          toast.warning("Security Alert", {
+            description: `New network activity flagged for review. ${res.active_alerts} total alerts active.`,
+            duration: 5000,
+            className:
+              "bg-orange-500 border-orange-500/50 text-white border-2 shadow-[0_0_15px_rgba(249,115,22,0.15)]",
           });
         }
       }

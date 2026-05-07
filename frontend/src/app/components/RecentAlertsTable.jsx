@@ -8,6 +8,7 @@ export function RecentAlertsTable({
   setPage,
   search,
   setSearch,
+  onViewDetails,
 }) {
   const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalAlerts / PAGE_SIZE);
@@ -23,8 +24,9 @@ export function RecentAlertsTable({
       : "—",
     threatType: a.attack_type,
     severity: a.severity?.charAt(0).toUpperCase() + a.severity?.slice(1),
-    confidence: a.log_details?.ml_score ?? 0,
+    confidence: a.log_details?.ai_score > 0 ? a.log_details.ai_score : (a.log_details?.ml_score ?? 0),
     status: a.log_details?.is_suspicious ? "Active" : "Resolved",
+    original: a, // Store original object for the details modal
   }));
 
   const getSeverityColor = (s) =>
@@ -143,7 +145,13 @@ export function RecentAlertsTable({
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <button className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors">
+                    <button
+                      onClick={() =>
+                        onViewDetails && onViewDetails(alert.original)
+                      }
+                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                      title="View Details"
+                    >
                       <Eye className="w-4 h-4 text-[#22D3EE]" />
                     </button>
                   </td>
@@ -166,22 +174,12 @@ export function RecentAlertsTable({
           >
             Previous
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`px-3 py-1 rounded text-sm ${
-                currentPage === p
-                  ? "bg-[#22D3EE] text-white"
-                  : "bg-[#0F172A] border border-[#334155] text-white hover:border-[#22D3EE]"
-              } transition-colors`}
-            >
-              {p}
-            </button>
-          ))}
+          <span className="px-3 py-1 text-sm text-gray-400 border border-[#334155] rounded bg-[#0F172A]">
+            Page {currentPage} of {totalPages || 1}
+          </span>
           <button
             onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || totalPages === 0}
             className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
           >
             Next

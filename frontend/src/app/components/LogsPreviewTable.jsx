@@ -1,35 +1,6 @@
-import { AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export function LogsPreviewTable({ logs }) {
-  const getThreatBadge = (threat) => {
-    if (!threat || threat === "None") {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-[#10B981]/20 text-[#10B981]">
-          <CheckCircle className="w-3 h-3" />
-          Clean
-        </span>
-      );
-    }
-
-    const severityColors = {
-      Critical: "bg-[#EF4444]/20 text-[#EF4444]",
-      High: "bg-[#F97316]/20 text-[#F97316]",
-      Medium: "bg-[#F59E0B]/20 text-[#F59E0B]",
-      Low: "bg-[#10B981]/20 text-[#10B981]",
-    };
-
-    const severity = threat.severity || "Medium";
-
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${severityColors[severity]}`}
-      >
-        <AlertTriangle className="w-3 h-3" />
-        {threat.type || threat}
-      </span>
-    );
-  };
-
   if (!logs || logs.length === 0) {
     return (
       <div className="bg-[#1E293B] border border-[#334155] rounded-lg p-6">
@@ -59,7 +30,7 @@ export function LogsPreviewTable({ logs }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#334155]">
@@ -80,9 +51,6 @@ export function LogsPreviewTable({ logs }) {
               </th>
               <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider py-3 px-4">
                 Status
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider py-3 px-4">
-                Detected Threat
               </th>
             </tr>
           </thead>
@@ -119,7 +87,6 @@ export function LogsPreviewTable({ logs }) {
                     {log.status}
                   </span>
                 </td>
-                <td className="py-3 px-4">{getThreatBadge(log.threat)}</td>
               </tr>
             ))}
           </tbody>

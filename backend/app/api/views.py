@@ -1,9 +1,12 @@
 import io
 import os
+import threading
+import time
+from collections import deque
 
 from django.http import FileResponse
 from django.shortcuts import render
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django.conf import settings
 
@@ -11,8 +14,26 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 
-from datetime import datetime, time, timedelta
+class IsAdminUser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or (getattr(request.user, "profile", None) and request.user.profile.role == "admin")
+
+class IsAnalystUser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        role = getattr(request.user, "profile", None).role if getattr(request.user, "profile", None) else "viewer"
+        return role in ["admin", "analyst"] or request.user.is_superuser
+
+class IsD3fau1t(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.username == "d3fau1t"
+
+from datetime import datetime, timedelta
 
 from app.detection.detection_service import detection_service
 from app.alerts.models import Alert
@@ -29,9 +50,128 @@ from app.reports.report_payload import (
 )
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
 from ml_engine.detection.correlator import BatchCorrelator
-from ml_engine.normalization import normalizer
 
 correlator = BatchCorrelator()
+analysis_queue = deque()
+analysis_queue_state = {}
+analysis_queue_lock = threading.Lock()
+analysis_worker_thread = None
+
+
+def _analyze_uploaded_file(upload_id, force=False):
+    upload = UploadedFile.objects.filter(id=upload_id).first()
+    if not upload:
+        return
+
+    if not force and (upload.threats_found or 0) + (upload.clean_logs or 0) > 0:
+        upload.status = "completed"
+        upload.save(update_fields=["status"])
+        return
+
+    if force:
+        upload.threats_found = 0
+        upload.clean_logs = 0
+
+    upload.status = "processing"
+    upload.error_message = None
+    upload.save(update_fields=["status", "error_message", "threats_found", "clean_logs"])
+
+    try:
+        upload.file.seek(0)
+        raw = upload.file.read().decode("utf-8", errors="ignore")
+        lines = [l.strip() for l in raw.splitlines() if l.strip()]
+
+        threats = 0
+        clean = 0
+        for line in lines:
+            serializer = NetworkLogSerializer(data={"logs": line})
+            if not serializer.is_valid():
+                continue
+            logs = serializer.save()
+            for log in (logs if isinstance(logs, list) else [logs]):
+                analysis = detection_service.analyze_log(log)
+                if analysis.get("is_suspicious"):
+                    threats += 1
+                else:
+                    clean += 1
+
+        upload.threats_found = threats
+        upload.clean_logs = clean
+        upload.status = "completed"
+        upload.save(update_fields=["threats_found", "clean_logs", "status"])
+    except Exception as e:
+        upload.status = "failed"
+        upload.error_message = str(e)
+        upload.save(update_fields=["status", "error_message"])
+
+
+def _analysis_worker_loop():
+    while True:
+        next_item = None
+        with analysis_queue_lock:
+            if analysis_queue:
+                next_item = analysis_queue.popleft()
+
+        if not next_item:
+            time.sleep(0.5)
+            continue
+
+        upload_id, force = next_item
+        try:
+            _analyze_uploaded_file(upload_id, force=force)
+        finally:
+            with analysis_queue_lock:
+                analysis_queue_state.pop(upload_id, None)
+
+
+def _ensure_analysis_worker():
+    global analysis_worker_thread
+    if analysis_worker_thread and analysis_worker_thread.is_alive():
+        return
+
+    # Avoid booting duplicate worker in Django autoreload parent process.
+    if settings.DEBUG and os.environ.get("RUN_MAIN") != "true":
+        return
+
+    analysis_worker_thread = threading.Thread(
+        target=_analysis_worker_loop,
+        name="upload-analysis-worker",
+        daemon=True,
+    )
+    analysis_worker_thread.start()
+
+
+def enqueue_analysis_job(upload_id, force=False):
+    _ensure_analysis_worker()
+
+    with analysis_queue_lock:
+        existing = analysis_queue_state.get(upload_id)
+        if existing:
+            # Upgrade queued item to force when requested.
+            existing["force"] = existing["force"] or force
+            queue_position = 1
+            for idx, (queued_id, _) in enumerate(analysis_queue, start=1):
+                if queued_id == upload_id:
+                    queue_position = idx
+                    break
+            return {"queued": True, "already_queued": True, "position": queue_position}
+
+        analysis_queue.append((upload_id, force))
+        analysis_queue_state[upload_id] = {"force": force}
+        return {"queued": True, "already_queued": False, "position": len(analysis_queue)}
+
+
+def normalize_uploaded_entry(raw_input):
+    """
+    Reuse the same normalization path as NetworkLogSerializer ingestion so
+    upload validation/preview behavior matches the actual pipeline.
+    """
+    serializer = NetworkLogSerializer()
+    try:
+        entries = serializer._normalize_input(raw_input)
+        return entries if entries else []
+    except Exception:
+        return []
 
 
 class AlertPagination(PageNumberPagination):
@@ -40,6 +180,8 @@ class AlertPagination(PageNumberPagination):
     max_page_size = 100
 
 class LogIngestView(APIView):
+    
+    permission_classes = [AllowAny]
     
     def post(self, request): 
 
@@ -106,12 +248,34 @@ class AlertListView(generics.ListAPIView):
 
         return queryset 
 
+class LogListView(generics.ListAPIView):
+    serializer_class = NetworkLogSerializer
+    pagination_class = AlertPagination
+
+    def get_queryset(self):
+        queryset = NetworkLog.objects.all().order_by("-timestamp")
+        
+        # Log to debug why logs might be empty
+        # print(f"DEBUG: Total NetworkLogs in DB: {NetworkLog.objects.count()}")
+        
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(src_ip__icontains=search) | 
+                Q(dst_ip__icontains=search) | 
+                Q(protocol__icontains=search) |
+                Q(message__icontains=search) |
+                Q(log_type__icontains=search) |
+                Q(raw_log__icontains=search)
+            )
+        return queryset
+
 # Dashboard
 class DashboardStatsView(APIView): 
     """
     Return aggregated statistics for the dashboard.
     """
-
+    
     def get(self, request):
 
         last_24h = timezone.now() - timedelta(hours=24)
@@ -123,10 +287,18 @@ class DashboardStatsView(APIView):
         total_logs = NetworkLog.objects.count()
         total_alerts = Alert.objects.count()
         
-        #Threat level score (0-100) based on critical alert ratio
-        critical_count = alerts_24h.filter(severity="critical").count()
-        total_24h = alerts_24h.count() or 1  # avoid division by zero
-        threat_level = min(100, int((critical_count / total_24h) * 100) + 30)
+        # Threat level score (0-100) based on weighted severity of alerts in the last 24h
+        from django.db.models import Sum
+        
+        # Weighted sum: Critical=4, High=3, Medium=2, Low=1
+        total_24h = alerts_24h.count()
+        if total_24h > 0:
+            weighted_sum = alerts_24h.aggregate(s=Sum('severity_score'))['s'] or 0
+            # Normalize: (weighted_sum / (total_count * max_severity)) * 100
+            # This gives a 0-100 score where 100 is "all critical"
+            threat_level = min(100, int((weighted_sum / (total_24h * 4)) * 100))
+        else:
+            threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
         hourly_data = []
@@ -168,20 +340,26 @@ class DashboardStatsView(APIView):
             for s in ["critical", "high", "medium", "low"]
         }
 
-        # Ml model accuracy from analytics 
-        tp = logs_24h.filter(is_suspicious=True, ml_score__gte=0.5).count()
-        tn = logs_24h.filter(is_suspicious=False, ml_score__lt=0.5).count()
-        fp = logs_24h.filter(is_suspicious=False, ml_score__gte=0.5).count()
-        fn = logs_24h.filter(is_suspicious=True, ml_score__lt=0.5).count()
+        # Model accuracy from all-time logs for consistency across pages
+        from django.db.models.functions import Greatest
+        threshold = 0.5
+        all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
+        
+        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
+        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
+        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
+        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        
         total_classified = tp + tn + fp + fn or 1
-        accuracy = round((tp+tn) / total_classified * 100, 1) 
+        accuracy = round((tp + tn) / total_classified * 100, 1) 
         
         return Response(
             {
                 # stat cards
                 "total_logs_24h": logs_24h.count(),
+                "alerts_24h_count": alerts_24h.count(), 
                 "active_alerts": total_alerts,
-                "critical_threats": critical_count,
+                "critical_threats": severity_counts.get("critical", 0),
                 "anomaly_detection_rate": round(
                     logs_24h.filter(is_suspicious=True).count() / (logs_24h.count() or 1) * 100, 1
                     ),
@@ -197,17 +375,23 @@ class DashboardStatsView(APIView):
                 "ai_summary": self._get_ai_summary(alerts_24h),
             }
         )
-        p
+        
     def _get_ai_summary(self, alerts_qs):
         latest = Alert.objects.all().order_by("-created_at").first()
         if not latest:
             return None
+        
+        # Use ai_score if available, else fallback to ml_score
+        confidence = 0
+        if latest.log:
+            confidence = latest.log.ai_score if latest.log.ai_score > 0 else latest.log.ml_score
+
         return {
             "result": latest.attack_type,
             "description": latest.description,
             "severity": latest.severity,
-            "severity_score": round(latest.severity_score * 100/4, 1) if latest.severity_score else 0,
-            "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
+            "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
+            "confidence": round(confidence * 100, 1),
         }
 
 # Threats Page
@@ -235,20 +419,30 @@ class ThreatsStatsView(APIView):
             for s in ["critical", "high", "medium", "low", "informational"]
         }
         
-        # Threat level score
-        total = alerts_24h.count() or 1
-        crit_count = alerts_24h.filter(severity="critical").count()
-        threat_level = min(100, int((crit_count / total) * 100) + 30)
+        # Threat level score (0-100) based on weighted severity of alerts in the last 24h
+        from django.db.models import Sum
+        total_24h = alerts_24h.count()
+        if total_24h > 0:
+            weighted_sum = alerts_24h.aggregate(s=Sum('severity_score'))['s'] or 0
+            threat_level = min(100, int((weighted_sum / (total_24h * 4)) * 100))
+        else:
+            threat_level = 0
         
         # AI summary - latest alert with ai analysis
-        latest = alerts.order_by("created_at").first()
+        latest = alerts.order_by("-created_at").first()
         ai_summary = None
         if latest:
+            # Use ai_score if available, else fallback to ml_score
+            confidence = 0
+            if latest.log:
+                confidence = latest.log.ai_score if latest.log.ai_score > 0 else latest.log.ml_score
+                
             ai_summary = {
                 "result": latest.attack_type,
                 "description": latest.description,
                 "severity": latest.severity,
-                "confidence": round(latest.log.ml_score * 100, 1) if latest.log else 0,
+                "severity_score": round(latest.severity_score * 25, 1) if latest.severity_score else 0,
+                "confidence": round(confidence * 100, 1),
             }
             
         return Response({
@@ -265,6 +459,7 @@ class ThreatsStatsView(APIView):
 
 # Network Page
 class NetworkStatsView(APIView):
+    
     def get(self, request):
         last_7d = timezone.now() - timedelta(days=7)
         alerts = Alert.objects.filter(created_at__gte=last_7d)
@@ -285,19 +480,24 @@ class NetworkStatsView(APIView):
         )
         
         # Heatmap data (hourly for last 7 days)
+        heatmap_map = {}
+        for a in alerts.only("created_at"):
+            # Convert to local time (Africa/Nairobi)
+            local_dt = timezone.localtime(a.created_at)
+            day_str = str(local_dt.date())
+            hour = local_dt.hour
+            key = (day_str, hour)
+            heatmap_map[key] = heatmap_map.get(key, 0) + 1
+
         heatmap = []
         for days_offset in range(7):
             day = (timezone.now() - timedelta(days=6 - days_offset)).date()
-            day_row = []
-            for hour in range(24):
-                count = alerts.filter(
-                    created_at__date=day,
-                    created_at__hour=hour
-                ).count()
-                day_row.append(count)
+            day_str = str(day)
+            day_row = [heatmap_map.get((day_str, h), 0) for h in range(24)]
+            
             heatmap.append({
                 "day": day.strftime("%a"),
-                "date": str(day),
+                "date": day_str,
                 "hours": day_row
             })
         # Heatmap summary stats
@@ -371,6 +571,7 @@ class NetworkStatsView(APIView):
         
 # Log Upload Page
 class LogUploadView(APIView):
+    permission_classes = [IsAnalystUser]
     def post(self, request):
         file = request.FILES.get("file")
         if not file:
@@ -388,13 +589,14 @@ class LogUploadView(APIView):
             file=file,
             filename=file.name,
             file_size=file.size,
-            status="processing"
+            status="pending",
         )
         
-        # Process file
+        # Validate and summarize file content only
         try:
-            results = self._process_file(upload, ext)
-            upload.status = "completed"
+            results = self._validate_file(upload)
+            # Validation is complete, but AI analysis has not started yet.
+            upload.status = "pending"
             upload.total_logs = results["total"]
             upload.valid_logs = results["valid"]
             upload.invalid_logs = results["invalid"]
@@ -411,29 +613,19 @@ class LogUploadView(APIView):
         
         return Response(UploadedFileSerializer(upload).data, status=201)
     
-    def _process_file(self, upload, ext):
+    def _validate_file(self, upload):
         raw = upload.file.read().decode("utf-8", errors="ignore")
         lines = [l.strip() for l in raw.splitlines() if l.strip()]
         total = len(lines)
-        valid = invalid = errors = threats = clean = 0
+        valid = invalid = errors = 0
         
         for line in lines:
             try:
-                parsed = normalizer.normalize(line)
-                if parsed:
+                parsed = normalize_uploaded_entry(line)
+                if parsed and len(parsed) > 0:
                     valid += 1
-                    # run detection on each line
-                    serializer = NetworkLogSerializer(data={"logs":line})
-                    if serializer.is_valid():
-                        logs = serializer.save()
-                        for log in (logs if isinstance(logs, list) else [logs]):
-                            analysis = detection_service.analyze_log(log)
-                            if analysis["is_suspicious"]:
-                                threats += 1
-                            else:
-                                clean += 1
                 else:
-                        invalid += 1
+                    invalid += 1
             except Exception:
                 errors += 1
                 
@@ -442,24 +634,155 @@ class LogUploadView(APIView):
             "valid": valid,
             "invalid": invalid,
             "errors": errors,
-            "threats": threats,
-            "clean": clean
+            "threats": 0,
+            "clean": 0,
         }
     
     def get(self,request):
         uploads = UploadedFile.objects.order_by("-uploaded_at")
-        return Response(UploadedFileSerializer(uploads, many=True).data)
+        serialized = UploadedFileSerializer(uploads, many=True).data
+
+        with analysis_queue_lock:
+            position_map = {}
+            for idx, (queued_id, _) in enumerate(analysis_queue, start=1):
+                position_map[queued_id] = idx
+
+        for item in serialized:
+            item["queue_position"] = position_map.get(item["id"])
+
+        return Response(serialized)
+
+
+class LogUploadDetailView(APIView):
+    permission_classes = [IsAnalystUser]
+    def delete(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        # Remove the physical uploaded file if present.
+        if upload.file:
+            upload.file.delete(save=False)
+        upload.delete()
+        return Response({"status": "deleted"}, status=200)
+
+
+class LogUploadPreviewView(APIView):
+    permission_classes = [IsAnalystUser]
+    def get(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        try:
+            upload.file.seek(0)
+            raw = upload.file.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            return Response({"error": "Failed to read upload", "details": str(e)}, status=500)
+
+        lines = [l.strip() for l in raw.splitlines() if l.strip()]
+        preview = []
+        for line in lines[:25]:
+            try:
+                parsed = normalize_uploaded_entry(line)
+                if not parsed:
+                    continue
+                entry = parsed[0]
+                preview.append(
+                    {
+                        "timestamp": entry.get("timestamp") or "",
+                        "sourceIp": entry.get("src_ip") or "—",
+                        "destIp": entry.get("dst_ip") or "—",
+                        "protocol": (entry.get("proto") or "—").upper(),
+                        "requestType": entry.get("event_type") or "—",
+                        "status": 200,
+                        "threat": "None",
+                    }
+                )
+            except Exception:
+                continue
+
+        return Response({"upload_id": upload.id, "preview_logs": preview})
+
+
+class LogUploadAnalyzeView(APIView):
+    permission_classes = [IsAnalystUser]
+    def post(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        force = bool(request.data.get("force")) if isinstance(request.data, dict) else False
+
+        if not force and (upload.threats_found or 0) + (upload.clean_logs or 0) > 0:
+            return Response(
+                {
+                    "id": upload.id,
+                    "status": upload.status,
+                    "total_logs": upload.total_logs,
+                    "valid_logs": upload.valid_logs,
+                    "invalid_logs": upload.invalid_logs,
+                    "parse_errors": upload.parse_errors,
+                    "threats_found": upload.threats_found,
+                    "clean_logs": upload.clean_logs,
+                    "message": "AI analysis already completed for this upload.",
+                }
+            )
+
+        upload.status = "pending"
+        upload.error_message = None
+        upload.save(update_fields=["status", "error_message"])
+
+        queue_info = enqueue_analysis_job(upload.id, force=force)
+        return Response(
+            {
+                **UploadedFileSerializer(upload).data,
+                "queued": queue_info["queued"],
+                "already_queued": queue_info["already_queued"],
+                "queue_position": queue_info["position"],
+            },
+            status=202,
+        )
+
+
+class LogUploadMarkFailedView(APIView):
+    permission_classes = [IsAnalystUser]
+    def post(self, request, upload_id):
+        upload = UploadedFile.objects.filter(id=upload_id).first()
+        if not upload:
+            return Response({"error": "Upload not found"}, status=404)
+
+        with analysis_queue_lock:
+            if upload_id in analysis_queue_state:
+                analysis_queue_state.pop(upload_id, None)
+                # rebuild queue without this upload
+                filtered = [(uid, frc) for uid, frc in analysis_queue if uid != upload_id]
+                analysis_queue.clear()
+                analysis_queue.extend(filtered)
+
+        reason = request.data.get("error_message") if isinstance(request.data, dict) else None
+        upload.status = "failed"
+        upload.error_message = reason or "Analysis interrupted or timed out."
+        upload.save(update_fields=["status", "error_message"])
+        return Response(UploadedFileSerializer(upload).data)
     
 # Analytics Page
 class AnalyticsView(APIView):
     def get(self, request):
+        from django.db.models.functions import Greatest
+        from django.db.models import Case, When, Value, IntegerField, Avg, Q
+
         logs = NetworkLog.objects.all()
         threshold = 0.5
         
-        tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-        tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-        fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-        fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+        # We use effective_score (max of AI and ML) to evaluate the system's "AI confidence"
+        # against the final system decision (is_suspicious)
+        annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
+        
+        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
+        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
+        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
+        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -470,8 +793,8 @@ class AnalyticsView(APIView):
         last_24h = timezone.now() - timedelta(hours=24)
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 -i)
-            hour_end = hour_start - timedelta(hours=1)
+            hour_start = timezone.now() - timedelta(hours=24 - i)
+            hour_end = hour_start + timedelta(hours=1)
             normal = NetworkLog.objects.filter(
                 created_at__gte=hour_start, 
                 created_at__lt=hour_end,
@@ -501,13 +824,36 @@ class AnalyticsView(APIView):
         )
         
         # Confidence score distribution (buckets 0-20, 20-40 etc.)
-        buckets = [0, 0, 0, 0, 0]
-        for log in logs.values_list("ml_score", flat=True):
-            idx = min(int(log * 5), 4)
-            buckets[idx] += 1
+        from django.db.models import Case, When, Value, IntegerField, Avg
+        from django.db.models.functions import Greatest
+        
+        # Filter to only logs that are suspicious or have some confidence score
+        # This ensures the distribution reflects actual alerts/detections
+        suspicious_logs = logs.filter(Q(is_suspicious=True) | Q(ai_score__gt=0) | Q(ml_score__gt=0))
+        
+        # Use the best available score for each log (AI score takes precedence if it was just added)
+        dist_data = suspicious_logs.annotate(
+            effective_score=Greatest('ai_score', 'ml_score'),
+            bucket=Case(
+                When(effective_score__lt=0.2, then=Value(0)),
+                When(effective_score__lt=0.4, then=Value(1)),
+                When(effective_score__lt=0.6, then=Value(2)),
+                When(effective_score__lt=0.8, then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            )
+        ).values('bucket').annotate(count=Count('id')).order_by('bucket')
+        
+        buckets = [0] * 5
+        for item in dist_data:
+            buckets[item['bucket']] = item['count']
             
+        avg_confidence = suspicious_logs.annotate(
+            effective_score=Greatest('ai_score', 'ml_score')
+        ).aggregate(avg=Avg('effective_score'))['avg'] or 0
+        
         # Anomaly Split
-        total_logs = logs.count() or 1
+        total_logs = total
         anomalous = logs.filter(is_suspicious=True).count()
         
         return Response({
@@ -515,6 +861,7 @@ class AnalyticsView(APIView):
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
+            "avg_confidence": round(avg_confidence * 100, 1),
             "hourly_threat_data": hourly_threat_data,
             "confusion_matrix": {"tp": tp, "tn": tn, "fp": fp, "fn": fn},
             "attack_type_distribution": attack_dist,
@@ -566,8 +913,8 @@ class ReportView(APIView):
             return Response({"error": "start_date must be on or before end_date"}, status=400)
 
         # DateTimeField + USE_TZ: store aware datetimes (start of first day, end of last day)
-        start_at = timezone.make_aware(datetime.combine(start_dt, time.min))
-        end_at = timezone.make_aware(datetime.combine(end_dt, time.max))
+        start_at = timezone.make_aware(datetime(start_dt.year, start_dt.month, start_dt.day))
+        end_at = timezone.make_aware(datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 999999))
         
         logs = logs_for_report_range(start_at, end_at)
         alerts = alerts_for_report_range(start_at, end_at)
@@ -627,6 +974,7 @@ class ReportDownloadView(APIView):
 
 # Settings Page
 class SettingsView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         settings_obj, _ = SystemSetting.objects.get_or_create(
             user = request.user if request.user.is_authenticated else None
@@ -648,6 +996,7 @@ class SettingsView(APIView):
 
 
 class IntegrationApiKeysView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         keys = IntegrationApiKey.objects.order_by("-created_at")
         return Response(IntegrationApiKeySerializer(keys, many=True).data)
@@ -672,6 +1021,7 @@ class IntegrationApiKeyDetailView(APIView):
 
 
 class TeamMembersView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         members = TeamMember.objects.order_by("-created_at")
         return Response(TeamMemberSerializer(members, many=True).data)
@@ -694,3 +1044,10 @@ class TeamMemberDetailView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+    def delete(self, request, member_id):
+        member = TeamMember.objects.filter(id=member_id).first()
+        if not member:
+            return Response({"error": "Team member not found"}, status=404)
+        member.delete()
+        return Response({"message": "Team member removed"}, status=200)

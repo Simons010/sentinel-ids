@@ -22,3 +22,6 @@ export const createTeamMember = (payload) =>
 
 export const updateTeamMember = (id, payload) =>
   api.patch(`settings/team-members/${id}/`, payload).then((r) => r.data);
+
+export const deleteTeamMember = (id) =>
+  api.delete(`settings/team-members/${id}/`).then((r) => r.data);

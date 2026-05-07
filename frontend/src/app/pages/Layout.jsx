@@ -1,15 +1,30 @@
 import { Outlet } from "react-router";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
-import { useState } from "react";
+import { LiveActivityTicker } from "../components/LiveActivityTicker";
+import { EventDetailsDialog } from "../components/EventDetailsDialog";
+import { useLiveFeed } from "../hooks/useLiveFeed";
+import { useDashboardStats } from "../hooks/useDashboardStats";
+import { useState, useCallback } from "react";
 import MobileNavigation from "../components/MobileNavigation";
 
 export default function Layout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { events, connected } = useLiveFeed();
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
+  // Initialize dashboard stats here with toasts enabled to make them system-wide
+  useDashboardStats(true);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
+
+  const handleEventClick = useCallback((event) => {
+    setSelectedEvent(event);
+    setIsDialogOpen(true);
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#0F172A] overflow-hidden">
@@ -23,6 +38,20 @@ export default function Layout() {
         <TopBar
           onToggleSidebar={toggleSidebar}
           isSidebarCollapsed={isSidebarCollapsed}
+        />
+
+        {/* Global Live Ticker */}
+        <LiveActivityTicker
+          events={events}
+          connected={connected}
+          onEventClick={handleEventClick}
+          isSidebarCollapsed={isSidebarCollapsed}
+        />
+
+        <EventDetailsDialog
+          event={selectedEvent}
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
         />
 
         {/* Page Content */}

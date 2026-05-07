@@ -5,6 +5,8 @@ import { AlertsChart } from "../components/AlertsChart";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { StatCard } from "../components/StatCard";
 import TopThreatVectors from "../components/TopThreatVectors";
+import { EventDetailsDialog } from "../components/EventDetailsDialog";
+import { useState } from "react";
 import { AlertTriangle, Shield, Target, AlertCircle } from "lucide-react";
 import { ThreatsLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
@@ -20,6 +22,28 @@ export default function Threats() {
     search,
     setSearch,
   } = useThreats();
+
+  const [selectedAlert, setSelectedAlert] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleViewDetails = (alert) => {
+    // Normalize alert data for EventDetailsDialog
+    const normalized = {
+      severity: alert.severity,
+      timestamp: alert.log_details?.timestamp ?? alert.created_at,
+      attack_type: alert.attack_type,
+      text: alert.description,
+      src_ip: alert.log_details?.src_ip,
+      dst_ip: alert.log_details?.dst_ip,
+      host: alert.log_details?.host,
+      process: alert.log_details?.process,
+      pid: alert.log_details?.pid,
+      confidence: alert.log_details?.ml_score ?? 0,
+      message: alert.log_details?.message,
+    };
+    setSelectedAlert(normalized);
+    setIsDialogOpen(true);
+  };
 
   const threatStatCards = stats
     ? [
@@ -116,6 +140,13 @@ export default function Threats() {
         setPage={setPage}
         search={search}
         setSearch={setSearch}
+        onViewDetails={handleViewDetails}
+      />
+
+      <EventDetailsDialog
+        event={selectedAlert}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
       />
 
       <div className="mt-8 pt-6 border-t border-[#334155]">

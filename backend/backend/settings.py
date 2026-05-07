@@ -32,12 +32,13 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-x5n1%-*gnhr(!xw1%1u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,0.0.0.0').split(',')
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,9 +46,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     'corsheaders',
     'channels',
     'app.api',
+    'app.auth_app',
     'app.alerts',
     'app.detection',
     'app.logs',
@@ -69,11 +73,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'backend.urls'
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -108,12 +107,20 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = 'backend.asgi.application'
 
+# CORS
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
+
 # Channel layer(Redis)
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            'hosts': [f"redis://{REDIS_HOST}:{REDIS_PORT}/0"],
+            'symmetric_encryption_keys': [SECRET_KEY],
         },
     },  
 }
@@ -124,11 +131,11 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DATABASE_NAME') or 'sentinel_ids',
-        'USER': os.environ.get('DATABASE_USER') or 'sentinel',
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD') or 'sentinel',
-        'HOST': os.environ.get('DATABASE_HOST') or '127.0.0.1',
-        'PORT': os.environ.get('DATABASE_PORT') or '3306',
+        'NAME': os.getenv('DATABASE_NAME', 'sentinel_ids'),
+        'USER': os.getenv('DATABASE_USER', 'sentinel'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'sentinel'),
+        'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DATABASE_PORT', '3306'),
     }
 }
 
@@ -179,13 +186,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 from pathlib import Path
 
+# Use the repository root for ML model paths
 PROJECT_ROOT = BASE_DIR.parent
 ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
 FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
 
+# Fallback for Docker environment where ml_engine might be inside the backend folder
+if not ML_MODEL_PATH.exists() and (BASE_DIR / "ml_engine").exists():
+    PROJECT_ROOT = BASE_DIR
+    ML_MODEL_PATH = PROJECT_ROOT / "ml_engine/models/random_forest.pkl"
+    FEATURE_EXTRACTOR_PATH = PROJECT_ROOT / "ml_engine/models/feature_extractor.pkl"
+
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

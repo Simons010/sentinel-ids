@@ -22,7 +22,7 @@ class NetworkLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = NetworkLog
         fields = "__all__"
-        read_only_fields = ('ml_score', 'is_suspicious', 'log_type')
+        read_only_fields = ('ml_score', 'ai_score', 'is_suspicious', 'log_type')
 
     def create(self, validated_data):
         raw_input = validated_data.pop('logs')

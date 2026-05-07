@@ -1,6 +1,5 @@
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useLiveFeed } from "../hooks/useLiveFeed";
-import { LiveActivityTicker } from "../components/LiveActivityTicker";
 import { StatCard } from "../components/StatCard";
 import { ThreatLevelIndicator } from "../components/ThreatLevelIndicator";
 import { AlertsChart } from "../components/AlertsChart";
@@ -19,8 +18,8 @@ import {
 import { DashboardLoadingSkeleton } from "../components/PageLoadingSkeletons";
 
 export default function Dashboard() {
-  const { data, loading, error } = useDashboardStats();
-  const { events, connected } = useLiveFeed();
+  const { data, loading, error: apiError } = useDashboardStats();
+  const { connected: wsConnected } = useLiveFeed();
 
   // Mock data for stat cards
   const statCardsData = data
@@ -34,22 +33,22 @@ export default function Dashboard() {
           accentColor: "#22D3EE",
         },
         {
-          icon: AlertTriangle,
+          icon: Shield,
           title: "Active Alerts",
-          value: data.active_alerts?.toString() ?? "--",
+          value: data.alerts_24h_count?.toString() ?? "--",
           change: -8.2,
           sparklineData: [
             280, 275, 268, 260, 255, 252, 248, 247, 246, 247, 248, 247,
           ],
-          accentColor: "#EF4444",
+          accentColor: "#F97316",
         },
         {
-          icon: Shield,
+          icon: AlertTriangle,
           title: "Critical Threats",
           value: data.critical_threats?.toString() ?? "--",
           change: -15.3,
           sparklineData: [18, 17, 16, 15, 14, 14, 13, 13, 12, 12, 12, 12],
-          accentColor: "#F97316",
+          accentColor: "#EF4444",
         },
         {
           icon: Activity,
@@ -83,10 +82,14 @@ export default function Dashboard() {
       ]
     : [];
 
-  if (error)
+  const isApiLive = !!data && !apiError;
+  const systemStatus = isApiLive ? "All systems operational" : "System Offline";
+  const statusColor = isApiLive ? "bg-[#10B981]" : "bg-red-500";
+
+  if (apiError)
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-red-400">{error}</p>
+        <p className="text-red-400">{apiError}</p>
       </div>
     );
 
@@ -110,19 +113,6 @@ export default function Dashboard() {
           <StatCard key={index} {...card} />
         ))}
       </div>
-
-      {/* Live Feed */}
-      <div className="flex items-center gap-2 text-sm">
-        <div
-          className={`w-2 h-2 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-400 animate-bounce"}`}
-        />
-        <span className="text-gray-400">
-          {connected ? "Live feed connected" : "Reconnecting..."}
-        </span>
-      </div>
-      <LiveActivityTicker
-        events={events.length > 0 ? events : (data?.live_feed ?? [])}
-      />
 
       {/* Threat Level & Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -155,10 +145,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between text-sm text-gray-400">
           <p>© 2026 Sentinel-IDS. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <span>Last system sync: 30 seconds ago</span>
+            <span>Last system sync: {loading ? "Syncing..." : "Just now"}</span>
             <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
-              All systems operational
+              <div
+                className={`w-2 h-2 rounded-full animate-pulse ${statusColor}`}
+              />
+              {systemStatus}
             </span>
           </div>
         </div>
