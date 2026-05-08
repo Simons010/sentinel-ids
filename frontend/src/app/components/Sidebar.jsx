@@ -24,7 +24,7 @@ const navItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-export function Sidebar({ isCollapsed }) {
+export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -48,80 +48,105 @@ export function Sidebar({ isCollapsed }) {
   const handleLogout = async () => {
     await logout();
     navigate("/login");
+    if (onMobileClose) onMobileClose();
   };
 
-  return (
-    <div
-      className={`hidden h-screen bg-[#0F172A] border-r border-[#334155] md:flex flex-col transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-    >
-      {/* Logo */}
-      <div
-        className={`p-6 border-b border-[#334155] ${isCollapsed ? "px-4" : ""}`}
-      >
-        <Link
-          to="/"
-          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
-        >
-          <div className="w-10 h-10 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-lg font-bold text-white whitespace-nowrap">
-                Sentinel-IDS
-              </h1>
-              <p className="text-xs text-gray-400 whitespace-nowrap">
-                AI-Powered Security
-              </p>
-            </div>
-          )}
-        </Link>
-      </div>
+  const sidebarClasses = `
+    fixed inset-y-0 left-0 z-[60] w-64 bg-[#0F172A] border-r border-[#334155] transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:flex flex-col
+    ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+    ${isCollapsed ? "md:w-20" : "md:w-64"}
+  `;
 
-      {/* Navigation */}
-      <nav className={`flex-1 p-4 space-y-1 ${isCollapsed ? "px-2" : ""}`}>
-        {filteredNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
+  return (
+    <>
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm transition-opacity"
+          onClick={onMobileClose}
+        />
+      )}
+
+      <div className={sidebarClasses}>
+        {/* Logo */}
+        <div
+          className={`p-6 border-b border-[#334155] ${isCollapsed ? "md:px-4" : ""}`}
+        >
+          <div className="flex items-center justify-between gap-3">
             <Link
-              key={item.label}
-              to={item.path}
-              className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all ${
-                isActive
-                  ? "bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/20"
-                  : "text-gray-400 hover:bg-[#1E293B] hover:text-white"
-              }`}
-              title={isCollapsed ? item.label : ""}
+              to="/"
+              onClick={onMobileClose}
+              className={`flex items-center ${isCollapsed ? "md:justify-center" : "gap-3"}`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="font-medium whitespace-nowrap">
-                  {item.label}
-                </span>
+              <div className="w-10 h-10 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-lg flex items-center justify-center flex-shrink-0">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              {(!isCollapsed || isMobileOpen) && (
+                <div className="overflow-hidden">
+                  <h1 className="text-lg font-bold text-white whitespace-nowrap">
+                    Sentinel-IDS
+                  </h1>
+                  <p className="text-xs text-gray-400 whitespace-nowrap">
+                    AI-Powered Security
+                  </p>
+                </div>
               )}
             </Link>
-          );
-        })}
-      </nav>
+            
+            {/* Close button for mobile */}
+            <button 
+              onClick={onMobileClose}
+              className="md:hidden p-2 text-gray-400 hover:text-white"
+            >
+              <LogOut className="w-5 h-5 rotate-180" />
+            </button>
+          </div>
+        </div>
 
-      {/* Logout */}
-      <div
-        className={`p-4 border-t border-[#334155] ${isCollapsed ? "px-2" : ""}`}
-      >
-        <button
-          onClick={handleLogout}
-          className={`w-full flex items-center ${isCollapsed ? "justify-center px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all`}
-          title={isCollapsed ? "Logout" : ""}
+        {/* Navigation */}
+        <nav className={`flex-1 p-4 space-y-1 ${isCollapsed ? "md:px-2" : ""}`}>
+          {filteredNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.label}
+                to={item.path}
+                onClick={onMobileClose}
+                className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all ${
+                  isActive
+                    ? "bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/20"
+                    : "text-gray-400 hover:bg-[#1E293B] hover:text-white"
+                }`}
+                title={isCollapsed ? item.label : ""}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {(!isCollapsed || isMobileOpen) && (
+                  <span className="font-medium whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Logout */}
+        <div
+          className={`p-4 border-t border-[#334155] ${isCollapsed ? "md:px-2" : ""}`}
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && (
-            <span className="font-medium whitespace-nowrap">Logout</span>
-          )}
-        </button>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all`}
+            title={isCollapsed ? "Logout" : ""}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {(!isCollapsed || isMobileOpen) && (
+              <span className="font-medium whitespace-nowrap">Logout</span>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
