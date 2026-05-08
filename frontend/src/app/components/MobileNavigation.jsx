@@ -11,10 +11,10 @@ export default function MobileNavigation({ onToggleMobileMenu }) {
   const location = useLocation();
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-    { icon: AlertTriangle, label: "Threats", path: "/threats" },
-    { icon: Globe, label: "Network", path: "/network" },
-    { icon: FileText, label: "Reports", path: "/reports" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: AlertTriangle, label: "Threats", path: "/dashboard/threats" },
+    { icon: Globe, label: "Network", path: "/dashboard/network" },
+    { icon: FileText, label: "Reports", path: "/dashboard/reports" },
   ];
 
   return (

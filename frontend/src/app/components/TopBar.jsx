@@ -101,7 +101,7 @@ export function TopBar({
 
         <button
           className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
           title={`${alertCount} alerts today`}
           aria-label="View alerts"
         >

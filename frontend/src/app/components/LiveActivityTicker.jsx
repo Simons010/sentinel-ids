@@ -153,15 +153,14 @@ export const LiveActivityTicker = memo(function LiveActivityTicker({
             className={`w-2 h-2 rounded-full ${connected ? "bg-[#10B981] animate-pulse" : "bg-yellow-500"}`}
           />
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            {connected ? "Live Feed" : "Reconnecting..."}
+            {connected ? "Live Feed" : "Disconnected"}
           </span>
         </div>
       </div>
 
       {!connected ? (
-        <div className="flex items-center h-full pl-36 text-xs text-gray-500 italic ">
-          Live threat monitoring is temporarily syncing. System remains
-          operational.
+        <div className="flex items-center h-full pl-38 text-xs text-gray-500 italic ">
+          Live threat monitoring is temporarily disconnected.
         </div>
       ) : (
         <motion.div
