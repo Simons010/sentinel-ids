@@ -1,0 +1,3 @@
+## 2024-05-24 - Bulk Create and Primary Keys
+**Learning:** In this project's Django 4.2+ and MySQL environment, `bulk_create` correctly populates Primary Keys (IDs) on the returned model instances. I can safely optimize log ingestion from O(N) iterative `create()` queries to an O(1) single `bulk_create()` query without breaking any downstream logic that relies on the generated IDs (such as returning them in an API response or using them in relationships).
+**Action:** Always prefer `bulk_create` for mass inserts in this codebase instead of iterating and calling `create()`, as the usual tradeoff (losing PKs on returned objects) does not apply here.
