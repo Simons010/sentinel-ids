@@ -580,7 +580,7 @@ export default function Register() {
           <div className="flex justify-between mt-6">
             <p>
               <Link
-                to="/home"
+                to="/"
                 className="text-[#22D3EE] hover:underline font-medium flex items-center gap-2 text-sm"
               >
                 <ArrowLeft className="w-4 h-4" /> Home

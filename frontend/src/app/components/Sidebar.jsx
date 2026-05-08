@@ -14,14 +14,14 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: AlertTriangle, label: "Threats", path: "/threats" },
-  { icon: Globe, label: "Network", path: "/network" },
-  { icon: Database, label: "Data Explorer", path: "/explorer" },
-  { icon: FileUp, label: "Logs Upload", path: "/logsUpload" },
-  { icon: BarChart3, label: "Analytics", path: "/analytics" },
-  { icon: FileText, label: "Reports", path: "/reports" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: AlertTriangle, label: "Threats", path: "/dashboard/threats" },
+  { icon: Globe, label: "Network", path: "/dashboard/network" },
+  { icon: Database, label: "Data Explorer", path: "/dashboard/explorer" },
+  { icon: FileUp, label: "Logs Upload", path: "/dashboard/logsUpload" },
+  { icon: BarChart3, label: "Analytics", path: "/dashboard/analytics" },
+  { icon: FileText, label: "Reports", path: "/dashboard/reports" },
+  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
 export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
@@ -74,7 +74,7 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
         >
           <div className="flex items-center justify-between gap-3">
             <Link
-              to="/"
+              to="/dashboard"
               onClick={onMobileClose}
               className={`flex items-center ${isCollapsed ? "md:justify-center" : "gap-3"}`}
             >
@@ -92,9 +92,9 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
                 </div>
               )}
             </Link>
-            
+
             {/* Close button for mobile */}
-            <button 
+            <button
               onClick={onMobileClose}
               className="md:hidden p-2 text-gray-400 hover:text-white"
             >
