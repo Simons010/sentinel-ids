@@ -330,6 +330,7 @@ class ReportSerializer(serializers.ModelSerializer):
 class SystemSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemSetting
+        extra_kwargs = {'smtp_password': {'write_only': True}}
         fields = [
             "id",
             "email_alerts", "push_notifications",
