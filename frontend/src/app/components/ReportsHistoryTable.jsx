@@ -120,7 +120,8 @@ export function ReportsHistoryTable({ history = [], onDownload }) {
                     <button
                       type="button"
                       onClick={() => onDownload?.(report)}
-                      className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE]/10 text-[#22D3EE] rounded-lg hover:bg-[#22D3EE]/20 transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-[#22D3EE]/10 text-[#22D3EE] rounded-lg hover:bg-[#22D3EE]/20 transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+                      aria-label={"Download " + report.name}
                     >
                       <Download className="w-4 h-4" />
                       <span className="text-sm font-medium">Download</span>
