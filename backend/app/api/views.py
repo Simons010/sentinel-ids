@@ -335,10 +335,11 @@ class DashboardStatsView(APIView):
             .order_by("-count")[:5]
         )
 
-        severity_counts = {
-            s: alerts_24h.filter(severity=s).count() 
-            for s in ["critical", "high", "medium", "low"]
-        }
+        # ⚡ Bolt: Optimize N+1 query loop by using a single GROUP BY query
+        severity_counts = {s: 0 for s in ["critical", "high", "medium", "low"]}
+        for r in alerts_24h.values('severity').annotate(count=Count('severity')).order_by():
+            if r['severity'] in severity_counts:
+                severity_counts[r['severity']] = r['count']
 
         # Model accuracy from all-time logs for consistency across pages
         from django.db.models.functions import Greatest
@@ -414,10 +415,11 @@ class ThreatsStatsView(APIView):
         )
         
         # Severity breakdown for pie chart
-        severity_breakdown = {
-            s: alerts_24h.filter(severity=s).count()
-            for s in ["critical", "high", "medium", "low", "informational"]
-        }
+        # ⚡ Bolt: Optimize N+1 query loop by using a single GROUP BY query
+        severity_breakdown = {s: 0 for s in ["critical", "high", "medium", "low", "informational"]}
+        for r in alerts_24h.values('severity').annotate(count=Count('severity')).order_by():
+            if r['severity'] in severity_breakdown:
+                severity_breakdown[r['severity']] = r['count']
         
         # Threat level score (0-100) based on weighted severity of alerts in the last 24h
         from django.db.models import Sum
