@@ -100,7 +100,8 @@ export function UploadedFilesList({ files, onRemoveFile }) {
                     {onRemoveFile && file.status !== "processing" && (
                       <button
                         onClick={() => onRemoveFile(file.id)}
-                        className="p-1 hover:bg-[#EF4444]/10 rounded transition-colors"
+                        className="p-1 hover:bg-[#EF4444]/10 rounded transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#EF4444]"
+                        aria-label={"Remove " + file.name}
                       >
                         <X className="w-4 h-4 text-gray-400 hover:text-[#EF4444]" />
                       </button>
