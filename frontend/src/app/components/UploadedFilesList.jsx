@@ -101,6 +101,7 @@ export function UploadedFilesList({ files, onRemoveFile }) {
                       <button
                         onClick={() => onRemoveFile(file.id)}
                         className="p-1 hover:bg-[#EF4444]/10 rounded transition-colors"
+                        aria-label={`Remove file ${file.name}`}
                       >
                         <X className="w-4 h-4 text-gray-400 hover:text-[#EF4444]" />
                       </button>
