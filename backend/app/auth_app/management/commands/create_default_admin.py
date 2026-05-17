@@ -1,15 +1,22 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 from app.users.models import UserProfile
 from django.utils import timezone
+import os
 
 class Command(BaseCommand):
-    help = 'Creates a default superuser d3fau1t if it does not exist'
+    help = 'Creates a default superuser if it does not exist based on environment variables'
 
     def handle(self, *args, **options):
-        username = 'd3fau1t'
-        email = 'admin@sentinel.ids'
-        password = 'd3fau1t_Password!2026'
+        username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+        email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
+        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+
+        if not username or not email or not password:
+            raise CommandError(
+                "You must set DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, "
+                "and DJANGO_SUPERUSER_PASSWORD environment variables."
+            )
 
         user = User.objects.filter(username=username).first()
         if not user:
