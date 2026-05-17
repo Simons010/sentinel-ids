@@ -1,3 +1,6 @@
 ## 2024-05-07 - Avoid Dynamic Values in `aria-label` Attributes
 **Learning:** Adding dynamic values (like unread notification counts) to static `aria-label` strings can cause screen readers to fall out of sync or improperly read state changes.
 **Action:** Instead of embedding dynamic values in `aria-label` or relying solely on a tooltip, inject visually hidden text using an `sr-only` class alongside visual badges. This ensures the screen reader is properly synchronized with dynamic data.
+## 2026-05-17 - Contextual ARIA Labels for Icon-Only Data Table Buttons
+**Learning:** Icon-only action buttons within data tables lack context when read by screen readers. A generic "Delete" or "View details" label does not clarify which item is being acted upon.
+**Action:** Always append identifying context from the row's data to the ARIA label (e.g., `aria-label={"Delete " + item.filename}`) to ensure screen readers provide meaningful context.
