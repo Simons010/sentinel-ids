@@ -1,0 +1,4 @@
+## 2026-05-20 - Hardcoded Admin Credentials in Management Command
+**Vulnerability:** Found hardcoded superuser username, email, and password in the Django management command `backend/app/auth_app/management/commands/create_default_admin.py` which was being used to set up the default superuser.
+**Learning:** Hardcoded credentials represent a critical risk as they can be extracted from the source code repository or the distributed application package. This was likely an oversight to make local setup easier but creates a backdoor. Management commands used in production must never rely on inline secrets.
+**Prevention:** Always enforce the use of environment variables for sensitive configuration, credentials, and seed data. Raise errors if the required environment variables (like `DJANGO_SUPERUSER_PASSWORD`) are not present instead of falling back to insecure defaults.
