@@ -41,7 +41,8 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            # ⚡ Bolt: Create model instances in memory instead of hitting the DB iteratively
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -59,6 +60,10 @@ class NetworkLogSerializer(serializers.ModelSerializer):
                 raw_log=entry.get("raw"),
             )
             instances.append(instance)
+
+        # ⚡ Bolt: Save all instances in a single query
+        # Note: In Django 4.2+ with MySQL/PostgreSQL, bulk_create returns instances with primary keys set
+        NetworkLog.objects.bulk_create(instances)
 
         return instances
 
