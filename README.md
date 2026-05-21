@@ -35,7 +35,7 @@
 1. **Clone the Repository**:
 
    ```bash
-   git clone [https://github.com/Simons010/sentinel-ids.git]
+   git clone https://github.com/Simons010/sentinel-ids.git
    cd sentinel-ids
    ```
 
