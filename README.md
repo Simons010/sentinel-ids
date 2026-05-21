@@ -35,7 +35,7 @@
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/your-username/sentinel-ids.git
+   git clone [https://github.com/Simons010/sentinel-ids.git]
    cd sentinel-ids
    ```
 
@@ -113,4 +113,4 @@ docker-compose exec backend pytest
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License
