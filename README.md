@@ -1,61 +1,116 @@
-# Sentinel-IDS
+# Sentinel-IDS: AI-Powered Intrusion Detection System
 
-**Sentinel-IDS** is a full-stack AI-Assisted Intrusion Detection System that analyzes server and network logs in real-time.
+**Sentinel-IDS** is a comprehensive, full-stack security monitoring platform designed to detect, analyze, and visualize network threats in real-time. By combining rule-based signatures, machine learning anomaly detection, and Gemini AI semantic analysis, it provides a multi-layered defense for modern infrastructure.
 
-## Features
+## Key Features
 
-- **Real-time Log Analysis**: Detects suspicious activities in server and network logs.
-- **AI-Powered**: Uses Machine Learning (Random Forest, Isolation Forest) and Gemini (LLM) for advanced detection and explanation.
-- **Dashboard**: React-based dashboard for real-time monitoring and alerts.
-- **Scalable**: Dockerized architecture with Django backend and MySQL database.
+- **3-Layer Detection Pipeline**:
+  - **Rules Engine**: Instant signature-based detection for known attack patterns.
+  - **ML Detector**: Random Forest model trained on UNSW-NB15 to catch statistical anomalies.
+  - **AI Analyzer**: Gemini LLM performs semantic analysis on logs to provide natural language explanations.
+- **Real-Time Dashboard**: High-performance React dashboard with live WebSocket feeds for instant threat visibility.
+- **Advanced Visualizations**: Geographical attack maps, threat level indicators, and detailed network traffic charts.
+- **Intelligent Log Ingestion**: Support for diverse log formats (JSON/CSV) with automatic normalization and enrichment.
+- **Role-Based Access Control**: Secure Admin, Analyst, and Viewer roles with an automated approval workflow.
+- **Automated Reporting**: Generate detailed threat summaries and performance reports in PDF/CSV formats.
 
 ## Architecture
 
-- **Frontend**: React, Vite, Tailwind CSS
-- **Backend**: Django REST Framework
-- **Database**: MySQL
-- **ML Engine**: Scikit-learn, TensorFlow/Keras, Gemini API
+- **Frontend**: React (Vite), Tailwind CSS, Framer Motion, Lucide Icons
+- **Backend**: Django REST Framework, Django Channels (WebSockets)
+- **Real-time**: Redis (Channel Layer for live broadcasts)
+- **Database**: MySQL 8.0
+- **AI/ML Engine**: Scikit-learn (Random Forest), Google Gemini Pro API
+- **Infrastructure**: Docker & Docker Compose
 
 ## Getting Started
 
 ### Prerequisites
 
 - Docker & Docker Compose
-- Node.js & npm (optional, for local frontend dev)
-- Python 3.10+ (optional, for local backend dev)
+- Google Gemini API Key (for AI semantic analysis features)
 
-### Installation & Running
+### Installation & Setup
 
-1. **Clone/Navigate to project**:
+1. **Clone the Repository**:
 
    ```bash
+   git clone https://github.com/your-username/sentinel-ids.git
    cd sentinel-ids
    ```
 
-2. **Start with Docker Compose**:
+2. **Configure Environment**:
+   Copy the example environment file and add your keys:
 
    ```bash
-   docker-compose up --build
+   cp .env.example .env
+   # Edit .env to add your GEMINI_API_KEY and custom credentials
    ```
 
-   This will start:
-   - MySQL Database (Port 3306)
-   - Django Backend (Port 8000)
-   - React Frontend (Port 5173)
+3. **Launch the System**:
 
-3. **Access the Application**:
-   - **Dashboard**: [http://localhost:5173](http://localhost:5173)
-   - **API Root**: [http://localhost:8000/api/](http://localhost:8000/api/)
-   - **Admin Panel**: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+   ```bash
+   docker-compose up --build -d
+   ```
+
+   This orchestrates the full stack:
+   - **MySQL**: Persistent storage for logs and alerts.
+   - **Redis**: Real-time event bus for WebSockets.
+   - **Backend**: Django API & ML Engine (Port 8000).
+   - **Frontend**: React application (Port 5173).
+
+### Access Points
+
+- **Home Page**: [http://localhost:5173](http://localhost:5173)
+- **Security Dashboard**: [http://localhost:5173/dashboard](http://localhost:5173/dashboard)
+- **API Documentation**: [http://localhost:8000/api/](http://localhost:8000/api/)
+- **Django Admin**: [http://localhost:8000/admin/](http://localhost:8000/admin/)
 
 ## Usage
 
-- **Log Ingestion**: Send POST requests to `/api/ingest/`.
-- **Anomalies**: View real-time alerts on the Dashboard.
-- **ML Training**: The model is trained on startup or can be retrained using `python3 ml_engine/models/train_initial.py`.
+### Default Credentials
 
-## API Documentation
+If not overridden in your `.env`, the system initializes with:
 
-- `POST /api/ingest/`: Ingest log data (JSON).
-- `GET /api/alerts/`: Get list of security alerts.
-- `GET /api/dashboard/stats/`: Get aggregated statistics.
+- **Username**: `d3fau1t`
+- **Password**: `d3fau1t_Password!2026`
+
+### Log Ingestion
+
+Send structured network logs to the ingestion endpoint:
+Example:
+
+```bash
+POST /api/ingest/
+Content-Type: application/json
+{
+    "src_ip": "192.168.1.50",
+    "dst_ip": "10.0.0.1",
+    "protocol": "tcp",
+    "message": "Potential SQL injection attempt detected in URI parameter"
+}
+```
+
+### Mobile Support
+
+Sentinel-IDS is fully responsive and features a dedicated mobile navigation bar and drawer for security monitoring on the go.
+
+## Development
+
+### Retraining the ML Model
+
+To retrain the Random Forest model on the latest dataset:
+
+```bash
+docker-compose exec backend python ml_engine/models/train_initial.py
+```
+
+### Running Tests
+
+```bash
+docker-compose exec backend pytest
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
