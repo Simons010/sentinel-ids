@@ -33,6 +33,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-x5n1%-*gnhr(!xw1%1u
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,0.0.0.0').split(',')
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -108,8 +110,12 @@ TEMPLATES = [
 ASGI_APPLICATION = 'backend.asgi.application'
 
 # CORS
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173,http://172.18.0.5:5173').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173,http://172.18.0.5:5173').split(',')
+
+# Allow CORS from any origin in debug mode for easier networking
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # Channel layer(Redis)
 REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')

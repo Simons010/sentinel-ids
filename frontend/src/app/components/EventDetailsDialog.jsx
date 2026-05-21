@@ -99,7 +99,7 @@ export function EventDetailsDialog({ event, open, onOpenChange }) {
           </div>
 
           <div className="pt-2 border-t border-[#334155]">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div className="flex items-center justify-between text-xs md:text-sm text-gray-500 mb-2">
               <span>Confidence Score</span>
               <span>{(event.confidence * 100).toFixed(2)}%</span>
             </div>
@@ -117,7 +117,7 @@ export function EventDetailsDialog({ event, open, onOpenChange }) {
                 Raw Log Data
               </span>
               <div className="bg-[#0F172A] p-3 rounded border border-[#334155] max-h-40 overflow-y-auto">
-                <code className="text-[10px] text-cyan-400 font-mono break-all whitespace-pre-wrap">
+                <code className="text-[10px] md:text-[12px] text-cyan-400 font-mono break-all whitespace-pre-wrap">
                   {event.raw_log}
                 </code>
               </div>

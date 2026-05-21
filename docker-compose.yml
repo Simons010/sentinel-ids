@@ -36,6 +36,10 @@ services:
       - PYTHONPATH=/app
       - DATABASE_HOST=db
       - REDIS_HOST=redis
+      - DEBUG=True
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-d3fau1t}
+      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@sentinel.ids}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-d3fau1t_Password!2026}
     develop:
       watch:
         - path: ./backend
@@ -58,8 +62,7 @@ services:
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://localhost:8000/api/
-      - VITE_WS_URL=ws://localhost:8000/ws/live-feed/
+      - NODE_ENV=development
     develop:
       watch:
         - path: ./frontend

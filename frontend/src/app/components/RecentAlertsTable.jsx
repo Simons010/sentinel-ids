@@ -24,7 +24,10 @@ export function RecentAlertsTable({
       : "—",
     threatType: a.attack_type,
     severity: a.severity?.charAt(0).toUpperCase() + a.severity?.slice(1),
-    confidence: a.log_details?.ai_score > 0 ? a.log_details.ai_score : (a.log_details?.ml_score ?? 0),
+    confidence:
+      a.log_details?.ai_score > 0
+        ? a.log_details.ai_score
+        : (a.log_details?.ml_score ?? 0),
     status: a.log_details?.is_suspicious ? "Active" : "Resolved",
     original: a, // Store original object for the details modal
   }));
@@ -44,20 +47,20 @@ export function RecentAlertsTable({
       : "bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30";
 
   return (
-    <div className="bg-[#1E293B] rounded-xl p-6 border border-[#334155]">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-[#1E293B] rounded-xl p-4 md:p-6 border border-[#334155]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <h3 className="text-lg font-semibold text-white">Recent Alerts</h3>
-        <div className="relative">
+        <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search alerts by id, type, status..."
+            placeholder="Search alerts..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-74 bg-[#0F172A] border border-[#334155] rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
+            className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
           />
         </div>
       </div>
@@ -139,7 +142,7 @@ export function RecentAlertsTable({
                   </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(alert.status)}`}
+                      className={`px-2 py-1 md:px-3 md:py-2 rounded text-xs md:text-sm font-semibold ${getStatusColor(alert.status)}`}
                     >
                       {alert.status}
                     </span>
@@ -162,15 +165,15 @@ export function RecentAlertsTable({
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-sm text-gray-400">
+      <div className="md:flex items-center justify-between mt-4">
+        <p className="text-sm text-center text-gray-400 md:text-left">
           Showing {mapped.length} of {totalAlerts} alerts
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-2 md:mt-0">
           <button
             onClick={() => setPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
+            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
           >
             Previous
           </button>
@@ -180,7 +183,7 @@ export function RecentAlertsTable({
           <button
             onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage >= totalPages || totalPages === 0}
-            className="px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
+            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
           >
             Next
           </button>

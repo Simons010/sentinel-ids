@@ -1,15 +1,16 @@
+import os
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from app.users.models import UserProfile
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = 'Creates a default superuser d3fau1t if it does not exist'
+    help = 'Creates a default superuser from environment variables if it does not exist'
 
     def handle(self, *args, **options):
-        username = 'd3fau1t'
-        email = 'admin@sentinel.ids'
-        password = 'd3fau1t_Password!2026'
+        username = os.getenv('DJANGO_SUPERUSER_USERNAME', 'd3fau1t')
+        email = os.getenv('DJANGO_SUPERUSER_EMAIL', 'admin@sentinel.ids')
+        password = os.getenv('DJANGO_SUPERUSER_PASSWORD', 'd3fau1t_Password!2026')
 
         user = User.objects.filter(username=username).first()
         if not user:

@@ -43,6 +43,7 @@ data/
 .idea/
 .github/
 .git-commit-message.md
+.trae
 
 # OS
 .DS_Store
