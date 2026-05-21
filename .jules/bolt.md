@@ -1,0 +1,3 @@
+## 2024-05-21 - Optimizing N+1 Severity Breakdown Queries
+**Learning:** When generating frequency distributions (e.g., counts per severity), iterative `.filter().count()` loops cause N+1 database queries. We can eliminate these by using `.values('field').annotate(count=Count('field')).order_by()`. Additionally, when using `.values().annotate()` in Django, an empty `.order_by()` is crucial to clear any default model ordering that might interfere with grouping logic.
+**Action:** Replace iterative `.filter().count()` calls with a single `annotate` query and pre-initialize the result dictionary with all expected keys to zero, ensuring consistent API responses.
