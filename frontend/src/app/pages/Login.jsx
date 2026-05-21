@@ -123,7 +123,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.username, form.password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.friendlyMessage || "Login failed");
     } finally {
@@ -209,7 +209,7 @@ export default function Login() {
           <div className="flex justify-between mt-6">
             <p>
               <Link
-                to="/home"
+                to="/"
                 className="text-[#22D3EE] text-sm hover:underline font-medium flex items-center gap-1"
               >
                 <ArrowLeft className="w-4 h-4" /> back to home

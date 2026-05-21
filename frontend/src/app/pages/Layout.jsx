@@ -10,6 +10,7 @@ import MobileNavigation from "../components/MobileNavigation";
 
 export default function Layout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { events, connected } = useLiveFeed();
@@ -21,6 +22,10 @@ export default function Layout() {
     setIsSidebarCollapsed((prev) => !prev);
   }, []);
 
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev);
+  }, []);
+
   const handleEventClick = useCallback((event) => {
     setSelectedEvent(event);
     setIsDialogOpen(true);
@@ -29,15 +34,20 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-[#0F172A] overflow-hidden">
       {/* Sidebar */}
-      <Sidebar isCollapsed={isSidebarCollapsed} />
-      <MobileNavigation />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+      />
+      <MobileNavigation onToggleMobileMenu={toggleMobileMenu} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
         {/* Top Bar */}
         <TopBar
           onToggleSidebar={toggleSidebar}
           isSidebarCollapsed={isSidebarCollapsed}
+          onToggleMobileMenu={toggleMobileMenu}
         />
 
         {/* Global Live Ticker */}
@@ -55,7 +65,7 @@ export default function Layout() {
         />
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-[1800px] mx-auto">
             <Outlet />
           </div>

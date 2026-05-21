@@ -15,13 +15,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 
 export const router = createBrowserRouter([
   // Public routes
-  { path: "/home", Component: Home },
+  { path: "/", Component: Home },
   { path: "/login", Component: Login },
   { path: "/register", Component: Register },
 
   //Protected routes - all inside Layout
   {
-    path: "/",
+    path: "/dashboard",
     element: (
       <ProtectedRoute>
         <Layout />

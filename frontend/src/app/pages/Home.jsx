@@ -170,7 +170,7 @@ export default function Home() {
               Request Access <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              to="/login"
+              to="/dashboard"
               className="flex items-center gap-2 px-8 py-4 border border-[#334155] text-gray-300 rounded-lg hover:border-[#22D3EE]/50 hover:text-white transition-all bg-[#1E293B]/50"
             >
               View Dashboard

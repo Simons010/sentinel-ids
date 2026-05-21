@@ -96,7 +96,7 @@ export default function Explorer() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-[#0F172A] rounded-xl border border-[#334155] w-fit">
+      <div className="flex gap-1 p-1 bg-[#0F172A] rounded-xl border border-[#334155] width-min md:w-fit">
         <button
           onClick={() => setActiveTab("logs")}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -134,18 +134,18 @@ export default function Explorer() {
       {activeTab === "logs" ? (
         <div className="bg-[#1E293B] rounded-xl p-6 border border-[#334155] animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <h3 className="text-lg font-semibold text-white">
+            <div className="grid md:flex items-center gap-4">
+              <h3 className="text-xs md:text-lg font-semibold text-white">
                 All Network Logs
               </h3>
-              <div className="flex items-center gap-2 px-3 py-1 bg-[#0F172A] rounded-full border border-[#334155]">
+              <div className="hidden md:flex  items-center gap-2 px-3 py-1 bg-[#0F172A] rounded-full border border-[#334155]">
                 <div className="w-2 h-2 bg-[#22D3EE] rounded-full" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <span className="text-[7px] lg:text-[10px] md:text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   Raw Ingest
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 md:gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input

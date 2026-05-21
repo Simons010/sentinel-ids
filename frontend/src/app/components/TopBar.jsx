@@ -11,7 +11,11 @@ import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useLiveFeed } from "../hooks/useLiveFeed";
 import { useNavigate, Link } from "react-router";
 
-export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
+export function TopBar({
+  onToggleSidebar,
+  isSidebarCollapsed,
+  onToggleMobileMenu,
+}) {
   const { user, logout } = useAuth();
   const { data: dashboardData, error: apiError } = useDashboardStats();
   const { connected: wsConnected } = useLiveFeed();
@@ -37,14 +41,17 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
     }[user?.role] ?? "text-gray-400 bg-gray-400/10";
 
   return (
-    <div className="h-16 bg-[#1E293B] border-b border-[#334155] px-6 flex items-center justify-between">
+    <div className="h-16 bg-[#1E293B] border-b border-[#334155] px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
       {/* Left */}
-      <div className="flex items-center gap-4 flex-1 max-w-2xl">
+      <div className="flex items-center gap-2 md:gap-4 flex-1 max-w-2xl">
+        {/* Desktop Toggle */}
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+          className="hidden md:p-2 md:hover:bg-[#0F172A] md:rounded-lg md:transition-colors md:text-gray-400 md:hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
           title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={
+            isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
+          }
         >
           {isSidebarCollapsed ? (
             <Menu className="w-5 h-5" aria-hidden="true" />
@@ -52,22 +59,32 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
             <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
           )}
         </button>
+
+        {/* Mobile Toggle */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="md:hidden p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
+          aria-label="Open Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search logs, alerts, IPs..."
-              className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
+              placeholder="Search..."
+              className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-9 md:pl-10 pr-4 py-1.5 md:py-2 text-sm md:text-base text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
             />
           </div>
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-4 ml-6">
+      <div className="flex items-center gap-2 md:gap-4 ml-4 md:ml-6">
         <div
-          className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155] cursor-help group"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-lg border border-[#334155] cursor-help group"
           title={
             !wsConnected && isApiLive
               ? "System is LIVE, but live ticker is currently disconnected"
@@ -80,17 +97,11 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
           <span className={`text-sm font-medium ${statusColor}`}>
             {systemStatus}
           </span>
-          {!wsConnected && isApiLive && (
-            <div
-              className="w-1.5 h-1.5 rounded-full bg-yellow-500 ml-1"
-              title="Ticker Offline"
-            />
-          )}
         </div>
 
         <button
-          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
-          onClick={() => navigate("/")}
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group"
+          onClick={() => navigate("/dashboard")}
           title={`${alertCount} alerts today`}
           aria-label="View alerts"
         >
@@ -99,45 +110,31 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
             aria-hidden="true"
           />
           {alertCount > 0 && (
-            <>
-              <span className="sr-only">{alertCount} unread alerts</span>
-              <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse border-2 border-[#1E293B]" aria-hidden="true">
-                {alertCount > 99 ? "99+" : alertCount}
-              </span>
-            </>
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#EF4444] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-[#1E293B] shadow-lg animate-in zoom-in duration-300">
+              {alertCount > 99 ? "99+" : alertCount}
+            </span>
           )}
         </button>
 
-        {/* User */}
-        <div className="flex items-center gap-3 pl-3 pr-2 py-2 bg-[#0F172A] rounded-lg border border-[#334155]">
-          <Link to="/settings" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center group-hover:shadow-lg group-hover:shadow-[#22D3EE]/30 transition-all">
-              <span className="text-xs font-bold text-white">
-                {user?.initials ?? "?"}
-              </span>
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-white leading-tight group-hover:text-[#22D3EE] transition-colors">
-                {user?.first_name
-                  ? `${user.first_name} ${user.last_name}`
-                  : (user?.username ?? "User")}
-              </p>
-              <span
-                className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize ${roleBadgeColor}`}
-              >
-                {user?.role ?? "viewer"}
-              </span>
-            </div>
-          </Link>
-          <div className="w-px h-8 bg-[#334155] mx-1" />
-          <button
-            onClick={handleLogout}
-            className="p-1.5 hover:bg-[#334155] rounded-lg transition-colors text-gray-400 hover:text-[#EF4444] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
-            title="Sign out"
-            aria-label="Sign out"
-          >
-            <LogOut className="w-4 h-4" aria-hidden="true" />
-          </button>
+        <div className="hidden md:flex items-center gap-3 pl-4 border-l border-[#334155]">
+          <div className="text-right">
+            <p className="text-sm font-medium text-white line-clamp-1">
+              {user?.username}
+            </p>
+            <span
+              className={`text-[10px] md:text-[12px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${roleBadgeColor}`}
+            >
+              {user?.role}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-[#334155] flex items-center justify-center text-[#22D3EE] font-bold border border-[#475569]">
+            {user?.username?.charAt(0).toUpperCase()}
+          </div>
+        </div>
+
+        {/* Mobile User Icon */}
+        <div className="md:hidden w-8 h-8 rounded-lg bg-[#334155] flex items-center justify-center text-[#22D3EE] font-bold border border-[#475569] text-sm">
+          {user?.username?.charAt(0).toUpperCase()}
         </div>
       </div>
     </div>
