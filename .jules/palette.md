@@ -1,0 +1,3 @@
+## 2024-05-22 - Adding contextual data to icon-only action buttons in data tables
+**Learning:** When using icon-only action buttons inside data tables (like "View Logs", "Reanalyze", or "Delete" in UploadHistoryTable), generic `aria-label` attributes (e.g., "Delete") are insufficient for screen readers, as the user loses context about which row the action applies to.
+**Action:** Always append identifying context from the row's data to the `aria-label` (e.g., `aria-label={"Delete " + item.filename}`) to ensure screen readers provide meaningful context for the action. Combine this with `aria-hidden="true"` on the inner SVG icon to prevent redundant announcements.
