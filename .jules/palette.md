@@ -1,0 +1,3 @@
+## 2024-06-25 - Contextual ARIA labels in Data Tables
+**Learning:** When dealing with dynamic lists or data tables (e.g. UploadHistoryTable, RecentAlertsTable), statically naming an ARIA label like "Delete" or "View logs" for an icon-only action button lacks necessary context for screen readers as they read out multiple identical buttons down a column. It's important to append identifying data from the row, such as the `alert.id` or `item.filename`, to make the actions meaningfully distinct. Also add `aria-hidden="true"` to inner SVG icons.
+**Action:** For icon-only action buttons within mapped lists or tables, consistently interpolate row-specific data into the `aria-label` string to ensure distinct and contextual announcement for assistive technologies.
