@@ -1,0 +1,3 @@
+## 2024-05-24 - Optimize N+1 query patterns for frequency distributions
+**Learning:** In Django views that calculate frequency distributions (e.g., counts per severity), using an iterative `.filter(field=value).count()` pattern inside a dictionary comprehension results in an N+1 query problem, making unnecessary database calls for each possible value.
+**Action:** Replace iterative `.filter().count()` calls with a single `.values('field').annotate(count=Count('field')).order_by()` query, and pre-initialize the result dictionary with all expected keys set to zero to ensure consistent API responses.
