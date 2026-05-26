@@ -1,0 +1,3 @@
+## 2024-05-26 - Django Dictionary Comprehension N+1
+**Learning:** Dictionary comprehensions that call `.filter().count()` on a Django QuerySet inside a loop result in N+1 queries. In `DashboardStatsView` and `ThreatsStatsView`, looping over severities like `["critical", "high", "medium", "low"]` caused multiple individual count queries.
+**Action:** Replace iterative `.filter().count()` calls with a single `.values().annotate(count=Count())` query. Pre-initialize the result dictionary with all expected keys set to 0 to ensure consistent API responses. Always include an empty `.order_by()` to clear default model ordering.
