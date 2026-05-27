@@ -147,28 +147,31 @@ export function UploadHistoryTable({
                       <button
                         onClick={() => onViewLogs?.(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group"
+                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
                         title="View logs"
+                        aria-label={"View logs for " + item.filename}
                       >
-                        <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#22D3EE]" />
+                        <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#22D3EE]" aria-hidden="true" />
                       </button>
                       {item.status !== "processing" && (
                         <button
                           onClick={() => onReanalyze?.(item)}
                           disabled={actionsDisabled}
-                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group"
+                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
                           title="Reanalyze"
+                          aria-label={"Reanalyze " + item.filename}
                         >
-                          <RotateCw className="w-4 h-4 text-gray-400 group-hover:text-[#10B981]" />
+                          <RotateCw className="w-4 h-4 text-gray-400 group-hover:text-[#10B981]" aria-hidden="true" />
                         </button>
                       )}
                       <button
                         onClick={() => setDeleteTarget(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group"
+                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444]"
                         title="Delete"
+                        aria-label={"Delete " + item.filename}
                       >
-                        <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-[#EF4444]" />
+                        <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-[#EF4444]" aria-hidden="true" />
                       </button>
                     </div>
                   </td>
