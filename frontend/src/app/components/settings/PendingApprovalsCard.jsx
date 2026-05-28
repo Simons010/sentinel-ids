@@ -124,17 +124,19 @@ export function PendingApprovalsCard({ onActionSuccess }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleAction(user.id, false)}
-                  className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
+                  className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors border border-transparent hover:border-red-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                   title="Reject User"
+                  aria-label={"Reject user " + user.username}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleAction(user.id, true)}
-                  className="p-2 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400 rounded-lg transition-colors border border-transparent hover:border-emerald-500/30"
+                  className="p-2 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400 rounded-lg transition-colors border border-transparent hover:border-emerald-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   title="Approve User"
+                  aria-label={"Approve user " + user.username}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
