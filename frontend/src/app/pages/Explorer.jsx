@@ -261,8 +261,9 @@ export default function Explorer() {
                         <button
                           onClick={() => handleLogDetails(log)}
                           className="p-1.5 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                          aria-label={"View log details for " + log.src_ip}
                         >
-                          <Eye className="w-4 h-4 text-[#22D3EE]" />
+                          <Eye className="w-4 h-4 text-[#22D3EE]" aria-hidden="true" />
                         </button>
                       </td>
                     </tr>
