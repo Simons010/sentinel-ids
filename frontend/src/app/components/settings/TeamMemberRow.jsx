@@ -49,8 +49,9 @@ export function TeamMemberRow({ member, onActivate, onRemove }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+              aria-label={"Remove " + member.name}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="bg-[#0F172A] border-[#334155] text-white">
