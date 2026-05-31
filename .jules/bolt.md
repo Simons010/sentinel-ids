@@ -1,0 +1,3 @@
+## 2024-05-31 - Optimize Django Iterative .filter().count() N+1 Query Patterns
+**Learning:** In Django APIs returning stats, looping over a list of categories to perform a `.filter(category=c).count()` query for each generates multiple redundant DB trips (N+1 query pattern). Using `.values().annotate()` requires adding an empty `.order_by()` to clear any default model ordering that might otherwise interfere with the intended grouping logic.
+**Action:** Always replace iterative `.filter().count()` calls with a single `.values('field').annotate(count=Count('id')).order_by()` query. Pre-initialize the result dictionary with all expected keys set to zero to ensure consistent API responses.
