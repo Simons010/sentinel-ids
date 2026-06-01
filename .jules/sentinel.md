@@ -1,0 +1,4 @@
+## 2024-06-01 - Hardcoded Default Admin Credentials
+**Vulnerability:** The Django management command `create_default_admin.py` used insecure hardcoded default passwords and credentials (`d3fau1t_Password!2026`) as a fallback if the environment variables were not set. These default variables were also included in `docker-compose.yml`.
+**Learning:** Hardcoding default passwords directly into the code as fallback values introduces a critical vulnerability where if a production deployment misses setting the environment variables, attackers can use the known default credentials to gain administrative access.
+**Prevention:** Remove fallback hardcoded passwords from the code and configuration files. Enforce the required environment variables by skipping default administrative user creation when the environmental credentials are missing, logging a warning instead.
