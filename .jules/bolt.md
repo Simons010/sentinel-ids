@@ -1,0 +1,3 @@
+## 2024-06-01 - Optimize N+1 queries for severity breakdown
+**Learning:** In Django views calculating breakdown distributions, using multiple `.filter(field=value).count()` inside loops or comprehensions creates N+1 query performance issues. By default, models may have implicit ordering that interferes with aggregation, causing additional queries or incorrect grouping.
+**Action:** Replace iterative `.filter().count()` calls with a single `.values('field').annotate(count=Count('field')).order_by()` query to aggregate results in the database. Always use an empty `.order_by()` to clear any default model ordering. Pre-initialize the result dictionary with all expected keys to ensure consistent API responses.
