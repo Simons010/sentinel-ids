@@ -1,0 +1,4 @@
+## 2024-06-02 - Fix SMTP Password Leakage in SystemSettings API
+**Vulnerability:** The `SystemSettingsSerializer` exposes the `smtp_password` field in plaintext responses because it lacks the `write_only` attribute in its `extra_kwargs`.
+**Learning:** In Django REST Framework, sensitive fields included in the `fields` list of a `ModelSerializer` will be readable by default unless explicitly marked as `write_only`. This can lead to unintentional credential leakage via API endpoints if not carefully configured.
+**Prevention:** Always configure `extra_kwargs = {'<sensitive_field>': {'write_only': True}}` for sensitive model fields (like passwords, keys, tokens) in DRF serializers to ensure they can be updated but are never exposed in GET responses or after creation.

@@ -340,6 +340,10 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
             "ai_model_mode", "continuous_learning", "ai_sensitivity",
             "smtp_server", "smtp_port", "smtp_username", "smtp_password",
         ]
+        # Sentinel: Prevent SMTP password leakage in API responses
+        extra_kwargs = {
+            "smtp_password": {"write_only": True}
+        }
 
 
 class IntegrationApiKeySerializer(serializers.ModelSerializer):
