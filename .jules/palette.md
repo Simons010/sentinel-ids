@@ -1,0 +1,3 @@
+## 2024-05-28 - Contextual ARIA Labels for Icon-Only Buttons
+**Learning:** Icon-only action buttons within data tables require unique, contextual ARIA labels (e.g. `aria-label={"Delete " + item.filename}`) and `aria-hidden="true"` on the SVGs to ensure screen readers provide meaningful context and do not redundantly announce visual elements. Furthermore, clear visual feedback for keyboard navigation is essential, requiring `focus-visible:outline-none focus-visible:ring-2` styles.
+**Action:** When adding or auditing icon-only buttons in mapped lists or data tables, explicitly check that ARIA labels dynamically include identifying context from the row data (like a filename or ID) and verify keyboard focus indicators are implemented.
