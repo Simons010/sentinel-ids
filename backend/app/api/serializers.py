@@ -41,7 +41,9 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            # ⚡ Bolt: Prevent N+1 insert performance bottleneck by avoiding iterative .create() calls
+            # Instantiating objects in memory instead of saving immediately
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -59,6 +61,10 @@ class NetworkLogSerializer(serializers.ModelSerializer):
                 raw_log=entry.get("raw"),
             )
             instances.append(instance)
+
+        # ⚡ Bolt: Execute single database transaction to batch insert all instances
+        if instances:
+            NetworkLog.objects.bulk_create(instances)
 
         return instances
 
