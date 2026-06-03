@@ -39,9 +39,12 @@ class NetworkLogSerializer(serializers.ModelSerializer):
         is_batch = len(normalized_entries) > 1
         session_id = uuid.uuid4() if is_batch else None
 
+        # ⚡ Bolt Optimization: Use bulk_create instead of iterative .create()
+        # Reduces N database inserts to 1 single O(1) query.
+        # In Django 4.2+ on MySQL, bulk_create correctly populates primary keys.
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -59,6 +62,8 @@ class NetworkLogSerializer(serializers.ModelSerializer):
                 raw_log=entry.get("raw"),
             )
             instances.append(instance)
+
+        NetworkLog.objects.bulk_create(instances)
 
         return instances
 
