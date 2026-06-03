@@ -1,0 +1,4 @@
+## 2024-05-18 - [CRITICAL] Fix hardcoded admin authorization bypass
+**Vulnerability:** Found a hardcoded authorization bypass in `backend/app/auth_app/views.py`. The `IsD3fau1t` permission class checked `request.user.username == "d3fau1t"`, which allowed anyone creating or logging in as "d3fau1t" to perform administrative actions such as approving pending users (`ApproveUserView`) and viewing pending users (`PendingUsersView`).
+**Learning:** Hardcoded credentials or username checks for administrative privileges bypass standard RBAC (Role-Based Access Control) mechanisms and introduce severe security risks.
+**Prevention:** Always use proper RBAC checks (e.g., `is_superuser`, checking roles in `UserProfile`, or Django's built-in permissions) instead of hardcoding usernames or credentials in permission classes.
