@@ -1,0 +1,3 @@
+## 2024-06-03 - [Optimize N+1 Query in Severity Breakdown]
+**Learning:** When aggregating counts for multiple categories (like severity breakdowns) in Django, using a loop with individual `.count()` queries results in N+1 database calls. This is a common performance bottleneck.
+**Action:** Replace iterative `.count()` calls with a single `.values().annotate(count=Count()).order_by()` query. Always initialize the result dictionary with zeros for all expected categories to maintain a consistent API response structure, as the single query won't return categories with zero counts. Also ensure an empty `.order_by()` is included when using `.values().annotate()` to avoid unwanted default ordering interference.

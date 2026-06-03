@@ -413,11 +413,11 @@ class ThreatsStatsView(APIView):
             .order_by("-count")[:5]
         )
         
-        # Severity breakdown for pie chart
-        severity_breakdown = {
-            s: alerts_24h.filter(severity=s).count()
-            for s in ["critical", "high", "medium", "low", "informational"]
-        }
+        # Severity breakdown for pie chart - optimized single query
+        severity_breakdown = {s: 0 for s in ["critical", "high", "medium", "low", "informational"]}
+        severity_counts_qs = alerts_24h.values('severity').annotate(count=Count('severity')).order_by()
+        for item in severity_counts_qs:
+            severity_breakdown[item['severity']] = item['count']
         
         # Threat level score (0-100) based on weighted severity of alerts in the last 24h
         from django.db.models import Sum
