@@ -1,0 +1,4 @@
+## 2024-05-18 - Prevent SMTP Password Leak in SystemSettingsSerializer
+**Vulnerability:** The `SystemSettingsSerializer` exposed the `smtp_password` field in plaintext via the API because it was included in the model's `fields` list without any restrictions.
+**Learning:** In Django REST Framework, simply listing a sensitive field in the `Meta.fields` of a `ModelSerializer` will return it in API responses by default. This is a common pitfall where credentials stored in the database are accidentally leaked to authorized (or unauthorized) users reading the model's data.
+**Prevention:** Always use `extra_kwargs` with `{'write_only': True}` for any sensitive credentials (passwords, tokens, keys) in `ModelSerializer` definitions. This ensures the API can still accept these values for updates/creation, but will never output them in responses.
