@@ -1,0 +1,4 @@
+## 2024-05-15 - [CRITICAL] Fix hardcoded Django SECRET_KEY fallback
+**Vulnerability:** The application fell back to a hardcoded `django-insecure-...` SECRET_KEY if the `DJANGO_SECRET_KEY` environment variable was missing. This is a critical security risk as it could allow attackers to forge session cookies, reset passwords, or exploit other vulnerabilities if deployed without the environment variable set.
+**Learning:** Using `os.getenv('KEY', 'insecure-default')` for critical secrets creates a false sense of security and a dangerous failure mode in production. The system should fail fast and securely instead of silently adopting an insecure state.
+**Prevention:** Never use default fallbacks for critical secrets like `SECRET_KEY`, database passwords, or API keys in configuration files. Always validate their presence and raise an exception (like `ImproperlyConfigured`) during startup if they are missing.
