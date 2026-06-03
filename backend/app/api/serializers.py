@@ -41,7 +41,7 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -59,6 +59,10 @@ class NetworkLogSerializer(serializers.ModelSerializer):
                 raw_log=entry.get("raw"),
             )
             instances.append(instance)
+
+        # ⚡ Bolt: Optimize batch ingestion by using bulk_create instead of iterative save.
+        # This resolves the N+1 query problem during bulk log uploads and improves DB throughput.
+        NetworkLog.objects.bulk_create(instances)
 
         return instances
 
