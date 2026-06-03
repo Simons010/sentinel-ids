@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing Authentication on API Endpoints
+**Vulnerability:** Django REST Framework API endpoints in `backend/app/api/views.py` lacked explicit `permission_classes`. Specifically, automated ingestion endpoints (`LogIngestView`) lacked explicit API key authorization leaving them open to unauthorized log ingestion.
+**Learning:** In Django REST Framework, if `DEFAULT_PERMISSION_CLASSES` is changed globally to `IsAuthenticated`, it applies to ALL endpoints, potentially breaking public-facing views like login, registration, and user-facing uploads unless they are explicitly exempted. We must carefully distinguish automated system API views from standard user views.
+**Prevention:** Apply specific permission classes like `HasAPIKey` directly to the views that require them (like `LogIngestView`) rather than relying on or altering global defaults unless a full audit of all endpoints is conducted.
