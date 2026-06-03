@@ -1,0 +1,3 @@
+## 2024-06-03 - Contextual ARIA Labels for Data Tables
+**Learning:** Icon-only action buttons within data tables require contextual ARIA labels (e.g., `aria-label={"Delete " + item.filename}`) instead of generic ones (like "Delete"), otherwise screen reader users cannot distinguish which specific row the action applies to. Additionally, the inner SVG icons must be hidden with `aria-hidden="true"` to prevent redundant announcements.
+**Action:** Always append identifying context from the row's data to the ARIA label of icon-only action buttons in list or table views, and hide the inner SVG from assistive technologies.

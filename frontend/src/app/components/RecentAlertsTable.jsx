@@ -154,8 +154,9 @@ export function RecentAlertsTable({
                       }
                       className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
                       title="View Details"
+                      aria-label={`View details for alert ${alert.id}`}
                     >
-                      <Eye className="w-4 h-4 text-[#22D3EE]" />
+                      <Eye className="w-4 h-4 text-[#22D3EE]" aria-hidden="true" />
                     </button>
                   </td>
                 </tr>
