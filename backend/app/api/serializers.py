@@ -41,7 +41,7 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -60,7 +60,8 @@ class NetworkLogSerializer(serializers.ModelSerializer):
             )
             instances.append(instance)
 
-        return instances
+        # ⚡ Bolt: Bulk create network logs to eliminate N+1 queries during ingestion
+        return NetworkLog.objects.bulk_create(instances)
 
     def _normalize_input(self, raw_input):
         """
