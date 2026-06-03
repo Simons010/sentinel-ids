@@ -49,6 +49,7 @@ from app.reports.report_payload import (
     normalize_report_type,
 )
 from app.settings_app.models import SystemSetting, IntegrationApiKey, TeamMember
+from app.api.permissions import HasAPIKey
 from ml_engine.detection.correlator import BatchCorrelator
 
 correlator = BatchCorrelator()
@@ -180,6 +181,7 @@ class AlertPagination(PageNumberPagination):
     max_page_size = 100
 
 class LogIngestView(APIView):
+    permission_classes = [HasAPIKey]
     
     permission_classes = [AllowAny]
     
