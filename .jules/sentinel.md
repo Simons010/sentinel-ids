@@ -1,0 +1,4 @@
+## 2026-05-14 - Fix credential exposure in SystemSettings API
+**Vulnerability:** The Django REST Framework serializer `SystemSettingsSerializer` exposed sensitive configuration fields such as `smtp_password` in plaintext during API responses because no specific configuration prevented it.
+**Learning:** Default DRF `ModelSerializer` fields will expose database values unless marked read-only or write-only. If sensitive configurations (like external API tokens, secrets, or passwords) are included in `fields`, they must be explicitly configured as write-only using `extra_kwargs` in the `Meta` class to avoid leaking them in API responses while still allowing users to update them.
+**Prevention:** Always identify sensitive fields in serializers that handle configuration or secrets, and explicitly set `extra_kwargs = {'<field_name>': {'write_only': True}}` to ensure they can only be written and never read via API endpoints.
