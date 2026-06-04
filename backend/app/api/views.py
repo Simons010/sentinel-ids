@@ -414,8 +414,16 @@ class ThreatsStatsView(APIView):
         )
         
         # Severity breakdown for pie chart
+        # ⚡ Bolt: Replaced N+1 .filter().count() queries with a single .values().annotate() query
+        # Impact: Reduces database queries from 5 to 1 for severity breakdown.
+        severity_counts = dict(
+            alerts_24h.values('severity')
+            .annotate(count=Count('severity'))
+            .order_by()
+            .values_list('severity', 'count')
+        )
         severity_breakdown = {
-            s: alerts_24h.filter(severity=s).count()
+            s: severity_counts.get(s, 0)
             for s in ["critical", "high", "medium", "low", "informational"]
         }
         

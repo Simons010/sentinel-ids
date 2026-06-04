@@ -1,0 +1,3 @@
+## 2024-06-04 - N+1 Query Anti-Pattern in Analytics Views
+**Learning:** In Django views that calculate frequency distributions (e.g., `ThreatsStatsView` calculating `severity_breakdown`), using a dictionary comprehension with iterative `.filter(field=value).count()` calls results in N+1 database queries. This is a significant performance bottleneck when calculating breakdowns over large datasets or multiple categories.
+**Action:** Always replace iterative `.filter().count()` calls with a single `.values('field').annotate(count=Count('field')).order_by()` query. Pre-initialize the result dictionary with all expected keys set to zero to ensure consistent API responses even if some categories have no matching records.
