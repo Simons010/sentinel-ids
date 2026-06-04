@@ -1,0 +1,4 @@
+## 2025-06-04 - Fix Hardcoded Secrets Exposure in API Responses
+**Vulnerability:** The `SystemSettingsSerializer` exposed the `smtp_password` field in plaintext via the API because it was not configured as a write-only field.
+**Learning:** In Django Rest Framework, all model fields included in `fields` are readable by default unless explicitly configured otherwise. When serializing sensitive information (like passwords or API keys), they must be marked as `write_only`.
+**Prevention:** Always add `extra_kwargs = {'<sensitive_field>': {'write_only': True}}` to the `Meta` class of the DRF serializers for any field containing sensitive credentials or passwords.
