@@ -1,0 +1,3 @@
+## 2024-06-05 - Icon-only action button accessibility
+**Learning:** In this application's tables (like UploadHistoryTable), action columns frequently use icon-only buttons with standard `title` tooltips but lack semantic screen reader support. Additionally, inner SVGs rendered by the Lucide library do not automatically hide themselves from the accessibility tree, which can cause redundant announcements.
+**Action:** When adding accessible keyboard focus or `aria-label`s to icon-only action buttons across the codebase, always ensure `aria-hidden="true"` is explicitly added to the inner SVG icons to prevent screen readers from redundantly announcing the visual elements.
