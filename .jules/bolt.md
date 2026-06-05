@@ -1,0 +1,3 @@
+## 2024-11-20 - Optimize Frequency Distribution Queries in Django
+**Learning:** In Django, using `.filter(field=value).count()` inside a loop or dictionary comprehension for frequency distributions causes an N+1 query problem, making one query per value instead of a single query.
+**Action:** Always replace iterative `.filter().count()` patterns with a single `.values('field').annotate(count=Count('field')).order_by()` query. Pre-initialize the result dictionary with zero for all expected keys, and then update it with the query results to ensure consistent API responses.
