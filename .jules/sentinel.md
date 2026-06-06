@@ -1,0 +1,4 @@
+## 2025-02-28 - Prevent Credential Leakage in DRF Serializers
+**Vulnerability:** The `SystemSettingsSerializer` exposed the `smtp_password` field in plaintext within API responses.
+**Learning:** By default, Django REST Framework serializers include all specified fields in both read and write operations. If a sensitive field is included in `fields`, it will be returned to the client unless explicitly configured otherwise.
+**Prevention:** Always use `extra_kwargs = {'<field_name>': {'write_only': True}}` within the `Meta` class of DRF serializers for sensitive fields like passwords, tokens, or API keys. This ensures the field can be updated by the client but is never exposed in API responses.
