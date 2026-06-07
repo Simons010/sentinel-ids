@@ -41,7 +41,7 @@ class NetworkLogSerializer(serializers.ModelSerializer):
 
         instances = []
         for index, entry in enumerate(normalized_entries):
-            instance = NetworkLog.objects.create(
+            instance = NetworkLog(
                 session_id=session_id,
                 sequence_index=index if is_batch else None,
                 timestamp=self._parse_timestamp(entry.get("timestamp")),
@@ -59,6 +59,9 @@ class NetworkLogSerializer(serializers.ModelSerializer):
                 raw_log=entry.get("raw"),
             )
             instances.append(instance)
+
+        # Optimization: Use bulk_create for batch insertion
+        NetworkLog.objects.bulk_create(instances)
 
         return instances
 
