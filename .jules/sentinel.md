@@ -1,0 +1,4 @@
+## 2024-06-07 - Credential Exposure in SystemSettingsSerializer
+**Vulnerability:** The `smtp_password` field was exposed in plaintext within DRF API responses via the `SystemSettingsSerializer` because it lacked the `write_only` attribute.
+**Learning:** In Django Rest Framework, all model fields included in `Meta.fields` are by default readable. Sensitive fields must be explicitly configured using `extra_kwargs = {'<field_name>': {'write_only': True}}` to prevent accidental data leaks.
+**Prevention:** Ensure that all sensitive fields (e.g., passwords, keys, tokens) in DRF serializers are configured as `write_only` to prevent them from being transmitted in plaintext API responses.
