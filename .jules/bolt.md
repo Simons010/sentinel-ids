@@ -1,0 +1,3 @@
+## 2026-06-07 - [Django MySQL Batch Insertion]
+**Learning:** In the Django 4.2+ MySQL environment used by the backend, `bulk_create` correctly returns instances with primary keys (IDs) set, making it safe and performant to use for batch insertion even when downstream logic requires the IDs.
+**Action:** Use `bulk_create` instead of looping `.create()` for batch object creation, even when IDs are needed in the response.
