@@ -237,7 +237,8 @@ class AlertListView(generics.ListAPIView):
     pagination_class = AlertPagination
     
     def get_queryset(self):
-        queryset = Alert.objects.all().order_by("-created_at")
+        # ⚡ Bolt: Optimize performance by pre-fetching related NetworkLog objects to avoid N+1 queries during serialization
+        queryset = Alert.objects.select_related("log").all().order_by("-created_at")
         severity = self.request.query_params.get("severity")
         search = self.request.query_params.get("search")
 
