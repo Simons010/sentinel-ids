@@ -1,0 +1,3 @@
+## 2024-06-08 - Fix N+1 Query in Django Rest Framework Serializers
+**Learning:** When a Django Rest Framework Serializer includes nested related models (e.g., `AlertSerializer` referencing `log`), querying the base model without `select_related` or `prefetch_related` causes an N+1 query problem during serialization, significantly impacting performance on list views.
+**Action:** Always verify if DRF serializers access foreign keys or nested models. If so, add `.select_related()` (for foreign keys) or `.prefetch_related()` (for many-to-many/reverse relations) to the queryset in the view's `get_queryset` method to eagerly load the related objects in a single query.
