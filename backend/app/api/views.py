@@ -342,14 +342,19 @@ class DashboardStatsView(APIView):
 
         # Model accuracy from all-time logs for consistency across pages
         from django.db.models.functions import Greatest
+        from django.db.models import Count, Q
         threshold = 0.5
         all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # Consolidate metrics calculation into a single aggregate query
+        stats = all_annotated.aggregate(
+            tp=Count('pk', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('pk', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('pk', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('pk', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
         
+        tp, tn, fp, fn = stats['tp'], stats['tn'], stats['fp'], stats['fn']
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp + tn) / total_classified * 100, 1) 
         
@@ -770,7 +775,7 @@ class LogUploadMarkFailedView(APIView):
 class AnalyticsView(APIView):
     def get(self, request):
         from django.db.models.functions import Greatest
-        from django.db.models import Case, When, Value, IntegerField, Avg, Q
+        from django.db.models import Case, When, Value, IntegerField, Avg, Q, Count
 
         logs = NetworkLog.objects.all()
         threshold = 0.5
@@ -779,10 +784,15 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # Consolidate metrics calculation into a single aggregate query
+        stats = annotated_logs.aggregate(
+            tp=Count('pk', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('pk', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('pk', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('pk', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+
+        tp, tn, fp, fn = stats['tp'], stats['tn'], stats['fp'], stats['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
