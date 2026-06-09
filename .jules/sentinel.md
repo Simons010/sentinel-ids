@@ -1,0 +1,4 @@
+## 2024-06-09 - Missing write_only flag for SMTP password
+**Vulnerability:** The `SystemSettingsSerializer` exposed the `smtp_password` field without `extra_kwargs = {'smtp_password': {'write_only': True}}`. This means that if a user reads the system settings endpoint, the SMTP password might be returned in plaintext, resulting in sensitive credential leakage.
+**Learning:** In Django REST Framework, model fields default to readable and writable unless explicitly overridden. When returning configuration records containing secrets, they are inherently unsafe.
+**Prevention:** Always verify all fields included in a DRF serializer's `fields` attribute. If a sensitive field (like a password, secret token, or key) is present, explicitly configure it as `write_only` using `extra_kwargs`.
