@@ -1,0 +1,3 @@
+## 2024-06-09 - [Consolidate redundant .count() DB queries]
+**Learning:** Calculating model evaluation metrics (TP, TN, FP, FN) by making four independent `.count()` queries against the same annotated queryset results in four separate table scans.
+**Action:** Always consolidate multiple aggregate queries filtering the same dataset into a single `.aggregate()` call using conditional `Count('pk', filter=Q(...))` to minimize database overhead and latency.
