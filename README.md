@@ -70,10 +70,11 @@
 
 ### Default Credentials
 
-If not overridden in your `.env`, the system initializes with:
+You must set the default administrator credentials in your `.env` file before initializing the system. The `create_default_admin` command will fail securely if these are not provided:
 
-- **Username**: `d3fau1t`
-- **Password**: `d3fau1t_Password!2026`
+- `DJANGO_SUPERUSER_USERNAME`
+- `DJANGO_SUPERUSER_EMAIL`
+- `DJANGO_SUPERUSER_PASSWORD`
 
 ### Log Ingestion
 
