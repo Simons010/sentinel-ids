@@ -1,0 +1,3 @@
+## 2025-06-10 - Replace Multiple .count() Queries with Conditional Aggregation
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating True Positives, True Negatives, False Positives, False Negatives metrics sequentially) triggers redundant database table scans, leading to poor query performance.
+**Action:** Replace multiple `.filter(...).count()` calls with a single `.aggregate()` call using conditional `Count` and `Q` objects (e.g., `.aggregate(tp=Count('id', filter=Q(...)), tn=Count('id', filter=Q(...)), ...)`). This consolidates the queries into a single database operation.
