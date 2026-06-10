@@ -152,10 +152,11 @@ export function RecentAlertsTable({
                       onClick={() =>
                         onViewDetails && onViewDetails(alert.original)
                       }
-                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
                       title="View Details"
+                      aria-label="View Details"
                     >
-                      <Eye className="w-4 h-4 text-[#22D3EE]" />
+                      <Eye className="w-4 h-4 text-[#22D3EE]" aria-hidden="true" />
                     </button>
                   </td>
                 </tr>
