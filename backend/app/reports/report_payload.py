@@ -5,7 +5,7 @@ Each type uses different slices of logs/alerts so exports and UI are not identic
 """
 from __future__ import annotations
 
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 
 from app.reports.weekly import weekly_log_activity_buckets
 
@@ -61,10 +61,21 @@ def build_report_snapshot(
         else None
     )
 
-    tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-    tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-    fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-    fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+    # ⚡ Bolt Optimization: Grouped TP/TN/FP/FN metrics generation into a single .aggregate()
+    # operation rather than running four separate .count() queries on the same logs table.
+    # Expected Impact: Optimizes database throughput during bulk report generation.
+    metrics = logs.aggregate(
+        tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+        tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+        fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+        fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold))
+    )
+
+    tp = metrics['tp'] or 0
+    tn = metrics['tn'] or 0
+    fp = metrics['fp'] or 0
+    fn = metrics['fn'] or 0
+
     total_classified = tp + tn + fp + fn or 1
     accuracy = round((tp + tn) / total_classified * 100, 1)
     suspicious_log_count = logs.filter(is_suspicious=True).count()
