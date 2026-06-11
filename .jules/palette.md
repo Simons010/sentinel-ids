@@ -1,0 +1,3 @@
+## 2024-06-11 - Add Focus Styles and ARIA to Sidebar
+**Learning:** Found that key interactive elements in the Sidebar component (mobile close button, nav links, and logout button) were lacking clear visual focus indicators for keyboard users, making navigation difficult without a mouse. Also, the mobile close button was missing an `aria-label`.
+**Action:** Consistently apply `focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]` to interactive elements to ensure accessibility for keyboard navigation, and ensure icon-only buttons have descriptive `aria-label` attributes while the inner icon has `aria-hidden="true"`.
