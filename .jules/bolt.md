@@ -1,0 +1,3 @@
+## 2025-06-11 - Optimize multiple .count() queries with .aggregate()
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating TP/TN/FP/FN metrics sequentially) triggers redundant table scans, creating a performance bottleneck in the backend dashboard and analytics endpoints.
+**Action:** Consolidate these independent counts into a single `.aggregate()` call using conditional `Count` and `Q` objects to calculate all metrics in a single database query, significantly improving database performance.
