@@ -345,10 +345,18 @@ class DashboardStatsView(APIView):
         threshold = 0.5
         all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt Optimization: Consolidate multiple .count() operations into a single .aggregate()
+        # query to eliminate redundant table scans and improve database performance.
+        metrics = all_annotated.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp + tn) / total_classified * 100, 1) 
@@ -779,10 +787,18 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt Optimization: Consolidate multiple .count() operations into a single .aggregate()
+        # query to eliminate redundant table scans and improve database performance.
+        metrics = annotated_logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = metrics['tp']
+        tn = metrics['tn']
+        fp = metrics['fp']
+        fn = metrics['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
