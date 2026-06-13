@@ -1,0 +1,3 @@
+## 2024-06-13 - Consolidated `.count()` Queries Using `.aggregate()`
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating TP/TN/FP/FN metrics sequentially) triggers redundant table scans, hurting database performance.
+**Action:** Consolidate multiple `.count()` operations into a single `.aggregate()` call using conditional `Count` and `Q` objects to improve database performance by executing a single query instead.
