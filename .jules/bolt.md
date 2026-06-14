@@ -1,0 +1,3 @@
+## 2024-06-14 - Optimize multiple count queries into a single aggregate query
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating True Positives, True Negatives, False Positives, False Negatives sequentially) triggers redundant table scans, negatively impacting database performance.
+**Action:** Consolidate multiple related `.count()` calculations into a single `.aggregate()` call using conditional `Count` and `Q` objects to improve database performance by reducing the number of database queries and table scans.
