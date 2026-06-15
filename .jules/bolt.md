@@ -1,0 +1,3 @@
+## 2024-06-15 - Django Queryset Performance: Combining Multiple Counts
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., sequentially calculating True Positives, True Negatives, False Positives, False Negatives) triggers redundant database table scans (N+1 query pattern).
+**Action:** Always batch multiple `.count()` queries into a single `.aggregate()` using conditional `Count` and `Q` objects (`Count('id', filter=Q(...))`) to optimize database performance.
