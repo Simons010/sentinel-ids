@@ -99,8 +99,10 @@ export function UploadedFilesList({ files, onRemoveFile }) {
                     {getStatusBadge(file.status)}
                     {onRemoveFile && file.status !== "processing" && (
                       <button
+                        aria-label="Remove file"
+                        title="Remove file"
                         onClick={() => onRemoveFile(file.id)}
-                        className="p-1 hover:bg-[#EF4444]/10 rounded transition-colors"
+                        className="p-1 hover:bg-[#EF4444]/10 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444]"
                       >
                         <X className="w-4 h-4 text-gray-400 hover:text-[#EF4444]" />
                       </button>
