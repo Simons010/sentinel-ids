@@ -38,8 +38,9 @@ const InputField = ({
       {type === "password" && (
         <button
           type="button"
+          aria-label={showPassword ? "Hide password" : "Show password"}
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE] rounded"
         >
           {showPassword ? (
             <EyeOff className="w-4 h-4" />
