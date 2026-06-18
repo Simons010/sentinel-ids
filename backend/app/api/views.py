@@ -345,10 +345,20 @@ class DashboardStatsView(APIView):
         threshold = 0.5
         all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt: Consolidated 4 sequential .count() queries into a single .aggregate() call.
+        # 🎯 Why: Each .count() was triggering an independent table scan on the annotated QuerySet.
+        # 📊 Impact: Reduces database queries from 4 to 1, significantly improving performance.
+        metrics = all_annotated.aggregate(
+            tp=Count('pk', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('pk', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('pk', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('pk', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+
+        tp = metrics['tp'] or 0
+        tn = metrics['tn'] or 0
+        fp = metrics['fp'] or 0
+        fn = metrics['fn'] or 0
         
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp + tn) / total_classified * 100, 1) 
@@ -779,10 +789,20 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt: Consolidated 4 sequential .count() queries into a single .aggregate() call.
+        # 🎯 Why: Each .count() was triggering an independent table scan on the annotated QuerySet.
+        # 📊 Impact: Reduces database queries from 4 to 1, significantly improving performance.
+        metrics = annotated_logs.aggregate(
+            tp=Count('pk', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('pk', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('pk', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('pk', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+
+        tp = metrics['tp'] or 0
+        tn = metrics['tn'] or 0
+        fp = metrics['fp'] or 0
+        fn = metrics['fn'] or 0
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
