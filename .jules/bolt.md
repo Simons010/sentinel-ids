@@ -1,0 +1,3 @@
+## 2025-02-23 - Sequential .count() queries act as N+1 anti-pattern on Django QuerySets
+**Learning:** Performing multiple independent `.count()` calls on the same annotated QuerySet (like calculating TP/TN/FP/FN sequentially) triggers redundant database table scans, acting similarly to an N+1 issue for aggregates.
+**Action:** Consolidate multiple metric counts into a single database query using `.aggregate()` with conditional `Count` and `Q` objects.
