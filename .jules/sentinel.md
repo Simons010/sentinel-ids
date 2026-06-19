@@ -1,0 +1,5 @@
+## 2025-06-19 - Hardcoded Fallback Credentials for Default Admin
+
+**Vulnerability:** The application had hardcoded fallback credentials (`d3fau1t_Password!2026`) for creating a default admin user across `create_default_admin.py` and `docker-compose.yml`. This creates a critical risk where an environment might be deployed without explicitly setting the admin password, leading to a system with an easily guessable default admin account.
+**Learning:** Hardcoded default credentials, even as fallbacks in environment variable parsing (`os.getenv('KEY', 'default_value')`), often lead to insecure deployments because operators might assume defaults are safe or overlook the need to configure them. Docker-compose files are often used directly in smaller environments, further amplifying this risk.
+**Prevention:** Always require explicitly set environment variables for sensitive initializations like superuser creation. If these variables are absent, the application should fail securely or explicitly skip the risky operation (with clear warnings), rather than falling back to known, insecure defaults.
