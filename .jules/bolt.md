@@ -1,0 +1,3 @@
+## 2026-06-19 - Optimizing N+1 issues when querying metrics from annotated querysets
+**Learning:** Performing multiple `.count()` queries on an annotated queryset (like evaluating different threshold outcomes from an `effective_score` annotation) forces Django to re-evaluate the entire annotation/subquery logic for every `.count()` call, causing N+1-like redundant table scans and computational overhead.
+**Action:** Consolidate multiple boolean conditional counts into a single `.aggregate()` call using conditional `Count` and `Q` objects. This allows the database to perform the annotation and compute all the metrics in a single pass.
