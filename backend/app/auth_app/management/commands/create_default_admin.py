@@ -10,7 +10,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         username = os.getenv('DJANGO_SUPERUSER_USERNAME', 'd3fau1t')
         email = os.getenv('DJANGO_SUPERUSER_EMAIL', 'admin@sentinel.ids')
-        password = os.getenv('DJANGO_SUPERUSER_PASSWORD', 'd3fau1t_Password!2026')
+        password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+
+        if not password:
+            self.stdout.write(self.style.ERROR('DJANGO_SUPERUSER_PASSWORD environment variable must be set.'))
+            return
 
         user = User.objects.filter(username=username).first()
         if not user:
