@@ -1,0 +1,3 @@
+## 2026-06-21 - Consolidate Multiple Count Queries on Annotated QuerySets
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g. `all_annotated.filter(...).count()`) leads to redundant table scans and duplicated query overhead, especially when calculating mutually exclusive or related metrics like TP, TN, FP, and FN.
+**Action:** Instead of multiple `.count()` calls, use a single `.aggregate()` call with conditional `Count` and `Q` objects (e.g. `aggregate(tp=Count('id', filter=Q(...)))`) to fetch all related counts in one database query, significantly reducing database load.
