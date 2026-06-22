@@ -1,0 +1,4 @@
+## 2025-01-01 - Fix Hardcoded Fallback Credentials
+**Vulnerability:** Hardcoded fallback credentials (`d3fau1t` username and password) were present in `create_default_admin.py`, `docker-compose.yml`, and `.env.example`, posing a critical security risk by allowing default access if explicit environment variables were not set.
+**Learning:** Default deployments should never rely on hardcoded fallback credentials. The `create_default_admin.py` management command, `docker-compose.yml`, and environment configurations must rely strictly on explicit environment variables.
+**Prevention:** Implement strict validation checks to ensure explicit credentials are provided before creating a default superuser, and remove all hardcoded default credentials from codebase configurations.
