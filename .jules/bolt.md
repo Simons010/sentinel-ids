@@ -1,0 +1,3 @@
+## 2024-06-22 - Django Queryset Performance: Consolidating Independent Count Queries
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating True Positives, True Negatives, False Positives, False Negatives sequentially) triggers redundant table scans. This is a common performance bottleneck in analytical dashboards.
+**Action:** Consolidate these independent count queries into a single `.aggregate()` call using conditional `Count` and `Q` objects. This allows the database to calculate all metrics in a single scan, significantly improving database performance, especially for large datasets.
