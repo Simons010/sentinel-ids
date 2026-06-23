@@ -31,7 +31,9 @@ class IsAnalystUser(BasePermission):
 
 class IsD3fau1t(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.username == "d3fau1t"
+        if not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or (getattr(request.user, "profile", None) and request.user.profile.role == "admin")
 
 from datetime import datetime, timedelta
 
