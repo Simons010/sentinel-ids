@@ -1,0 +1,3 @@
+## 2024-06-24 - Database Query Optimization
+**Learning:** Performing multiple independent `.count()` queries on the same annotated queryset (e.g., calculating TP/TN/FP/FN metrics sequentially) triggers redundant table scans, which can be a significant performance bottleneck.
+**Action:** Consolidate multiple related `.count()` queries on the same queryset into a single `.aggregate()` call using conditional `Count` and `Q` objects to improve database performance and reduce unnecessary queries.
