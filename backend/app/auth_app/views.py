@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 
 class IsD3fau1t(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.username == "d3fau1t"
+        return request.user.is_authenticated and request.user.is_superuser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from app.users.models import UserProfile
