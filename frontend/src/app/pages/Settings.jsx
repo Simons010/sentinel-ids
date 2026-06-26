@@ -56,7 +56,7 @@ export default function Settings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UserProfileCard user={user} />
-        {user?.username === "d3fau1t" && (
+        {user?.role === "admin" && (
           <PendingApprovalsCard onActionSuccess={refetch} />
         )}
         <NotificationsSettingsCard settings={settings} setField={setField} />
