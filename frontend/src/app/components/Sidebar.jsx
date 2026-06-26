@@ -96,9 +96,10 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
             {/* Close button for mobile */}
             <button
               onClick={onMobileClose}
-              className="md:hidden p-2 text-gray-400 hover:text-white"
+              className="md:hidden p-2 text-gray-400 hover:text-white rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+              aria-label="Close Mobile Menu"
             >
-              <LogOut className="w-5 h-5 rotate-180" />
+              <LogOut className="w-5 h-5 rotate-180" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -113,14 +114,15 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
                 key={item.label}
                 to={item.path}
                 onClick={onMobileClose}
-                className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all ${
+                className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE] ${
                   isActive
                     ? "bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/20"
                     : "text-gray-400 hover:bg-[#1E293B] hover:text-white"
                 }`}
                 title={isCollapsed ? item.label : ""}
+                aria-label={item.label}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 {(!isCollapsed || isMobileOpen) && (
                   <span className="font-medium whitespace-nowrap">
                     {item.label}
@@ -137,10 +139,11 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
         >
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all`}
+            className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]`}
             title={isCollapsed ? "Logout" : ""}
+            aria-label="Logout"
           >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
             {(!isCollapsed || isMobileOpen) && (
               <span className="font-medium whitespace-nowrap">Logout</span>
             )}
