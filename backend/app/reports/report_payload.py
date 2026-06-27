@@ -5,7 +5,7 @@ Each type uses different slices of logs/alerts so exports and UI are not identic
 """
 from __future__ import annotations
 
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 
 from app.reports.weekly import weekly_log_activity_buckets
 
@@ -61,10 +61,14 @@ def build_report_snapshot(
         else None
     )
 
-    tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-    tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-    fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-    fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+    # ⚡ Bolt: Consolidate N+1 count queries into a single aggregate table scan
+    counts = logs.aggregate(
+        tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+        tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+        fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+        fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold)),
+    )
+    tp, tn, fp, fn = counts['tp'], counts['tn'], counts['fp'], counts['fn']
     total_classified = tp + tn + fp + fn or 1
     accuracy = round((tp + tn) / total_classified * 100, 1)
     suspicious_log_count = logs.filter(is_suspicious=True).count()
