@@ -1,0 +1,3 @@
+## 2024-05-24 - Add accessibility attributes and focus states to Icon-Only Buttons
+**Learning:** Found a pattern in this application's components where icon-only action buttons (e.g. in tables) lack ARIA labels and inner `aria-hidden` attributes for the icons, making them inaccessible to screen readers. They also lack clear keyboard focus styles (`focus-visible`).
+**Action:** When working on icon-only buttons in this app, explicitly add `aria-label` to the `<button>` element, add `aria-hidden="true"` to the inner SVG/Icon element, and add specific focus outline classes (`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color]`) matching the hover state color.
