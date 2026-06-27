@@ -7,9 +7,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 
-class IsD3fau1t(BasePermission):
+class IsSuperUser(BasePermission):
+    """Admin-only access for superusers."""
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.username == "d3fau1t"
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from app.users.models import UserProfile
@@ -34,6 +35,7 @@ def user_data(user):
         "last_name":   user.last_name,
         "role":        profile.role        if profile else "viewer",
         "is_approved": profile.is_approved if profile else False,
+        "is_superuser": user.is_superuser,
         "initials":    (
             (user.first_name[0] + user.last_name[0]).upper()
             if user.first_name and user.last_name
@@ -214,8 +216,8 @@ class MeView(APIView):
 
 
 class ApproveUserView(APIView):
-    """Admin-only (specifically d3fau1t) — approve a pending user."""
-    permission_classes = [IsD3fau1t]
+    """Superuser-only — approve a pending user."""
+    permission_classes = [IsSuperUser]
 
     def post(self, request, user_id):
         approved = request.data.get("approved", True)
@@ -250,8 +252,8 @@ class ApproveUserView(APIView):
 
 
 class PendingUsersView(APIView):
-    """Admin-only (specifically d3fau1t) — list users awaiting approval."""
-    permission_classes = [IsD3fau1t]
+    """Superuser-only — list users awaiting approval."""
+    permission_classes = [IsSuperUser]
 
     def get(self, request):
         pending = UserProfile.objects.filter(
