@@ -33,13 +33,13 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.path === "/settings") {
-      return userRole === "admin" || user?.username === "d3fau1t";
+      return userRole === "admin" || user?.is_superuser;
     }
     if (item.path === "/logsUpload") {
       return (
         userRole === "admin" ||
         userRole === "analyst" ||
-        user?.username === "d3fau1t"
+        user?.is_superuser
       );
     }
     return true;

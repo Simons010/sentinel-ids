@@ -29,10 +29,6 @@ class IsAnalystUser(BasePermission):
         role = getattr(request.user, "profile", None).role if getattr(request.user, "profile", None) else "viewer"
         return role in ["admin", "analyst"] or request.user.is_superuser
 
-class IsD3fau1t(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.username == "d3fau1t"
-
 from datetime import datetime, timedelta
 
 from app.detection.detection_service import detection_service
