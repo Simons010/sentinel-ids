@@ -63,19 +63,20 @@ export function TopBar({
         {/* Mobile Toggle */}
         <button
           onClick={onToggleMobileMenu}
-          className="md:hidden p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="md:hidden p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
           aria-label="Open Menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-gray-400" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search..."
-              className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-9 md:pl-10 pr-4 py-1.5 md:py-2 text-sm md:text-base text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] transition-colors"
+              aria-label="Search"
+              className="w-full bg-[#0F172A] border border-[#334155] rounded-lg pl-9 md:pl-10 pr-4 py-1.5 md:py-2 text-sm md:text-base text-white placeholder-gray-500 focus:outline-none focus:border-[#22D3EE] focus-visible:ring-2 focus-visible:ring-[#22D3EE] transition-colors"
             />
           </div>
         </div>
