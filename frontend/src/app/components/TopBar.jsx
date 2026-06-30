@@ -63,10 +63,10 @@ export function TopBar({
         {/* Mobile Toggle */}
         <button
           onClick={onToggleMobileMenu}
-          className="md:hidden p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="md:hidden p-2 hover:bg-[#0F172A] rounded-lg transition-colors text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
           aria-label="Open Menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <div className="flex-1">
@@ -100,7 +100,7 @@ export function TopBar({
         </div>
 
         <button
-          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group"
+          className="relative p-2 hover:bg-[#0F172A] rounded-lg transition-colors group focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
           onClick={() => navigate("/dashboard")}
           title={`${alertCount} alerts today`}
           aria-label="View alerts"
