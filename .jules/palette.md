@@ -1,0 +1,4 @@
+## 2026-07-02 - Add missing focus rings and ARIA attributes for mobile and alert navigation buttons
+
+**Learning:** Adding missing focus outlines (`focus-visible:ring-2`) directly onto small, padded icon-only navigation buttons in the `TopBar` and `Sidebar` successfully increases keyboard accessibility and visual feedback without expanding hit targets unnecessarily. Additionally, explicitly assigning `aria-hidden="true"` to raw SVG/lucide icons within those buttons prevents screen readers from redundantly voicing visual artifacts when an explicit `aria-label` is already declared.
+**Action:** When creating or auditing new icon-only actionable components (especially navigation toggles and mobile menus), ensure that custom focus states are explicitly styled if default browser outlines are overridden, and unconditionally hide the inner SVGs to maintain a clean screen reader DOM tree.
