@@ -345,10 +345,16 @@ class DashboardStatsView(APIView):
         threshold = 0.5
         all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        counts = all_annotated.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = counts['tp']
+        tn = counts['tn']
+        fp = counts['fp']
+        fn = counts['fn']
         
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp + tn) / total_classified * 100, 1) 
@@ -402,9 +408,14 @@ class ThreatsStatsView(APIView):
         alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
         
         #stats cards
-        active_alerts = alerts.filter(severity__in=["critical", "high", "medium", "low"]).count()
-        critical = alerts.filter(severity="critical").count()
-        medium = alerts.filter(severity="medium").count()
+        counts = alerts.aggregate(
+            active_alerts=Count('id', filter=Q(severity__in=["critical", "high", "medium", "low"])),
+            critical=Count('id', filter=Q(severity="critical")),
+            medium=Count('id', filter=Q(severity="medium"))
+        )
+        active_alerts = counts['active_alerts']
+        critical = counts['critical']
+        medium = counts['medium']
           
         # Top threat vectors - group by attack_type, count,assign severity
         top_vectors = list(
@@ -779,10 +790,16 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        counts = annotated_logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = counts['tp']
+        tn = counts['tn']
+        fp = counts['fp']
+        fn = counts['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
