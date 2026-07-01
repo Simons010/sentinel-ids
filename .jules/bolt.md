@@ -1,0 +1,3 @@
+## 2025-02-27 - Django ORM N+1 Count Optimization
+**Learning:** Multiple sequential `.count()` calls on the same annotated queryset result in redundant database scans, leading to performance bottlenecks when evaluating AI model accuracy metrics.
+**Action:** Consolidated multiple sequential `.count()` queries into a single `.aggregate()` call using conditional `Count` and `Q` objects to optimize the query plan and improve analytics endpoint performance.
