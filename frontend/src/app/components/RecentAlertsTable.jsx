@@ -152,8 +152,9 @@ export function RecentAlertsTable({
                       onClick={() =>
                         onViewDetails && onViewDetails(alert.original)
                       }
-                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#22D3EE]/20 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
                       title="View Details"
+                      aria-label="View alert details"
                     >
                       <Eye className="w-4 h-4 text-[#22D3EE]" />
                     </button>
@@ -173,7 +174,7 @@ export function RecentAlertsTable({
           <button
             onClick={() => setPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
+            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
           >
             Previous
           </button>
@@ -183,7 +184,7 @@ export function RecentAlertsTable({
           <button
             onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage >= totalPages || totalPages === 0}
-            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40"
+            className="px-1 md:px-3 py-1 bg-[#0F172A] border border-[#334155] rounded text-sm text-white hover:border-[#22D3EE] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
           >
             Next
           </button>
