@@ -779,10 +779,18 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt Optimization: Consolidate multiple sequential .count() queries into a single
+        # .aggregate() call using conditional Count and Q objects to avoid database roundtrips.
+        counts = annotated_logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = counts['tp']
+        tn = counts['tn']
+        fp = counts['fp']
+        fn = counts['fn']
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
