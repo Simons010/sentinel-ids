@@ -1,0 +1,3 @@
+## 2024-07-03 - Missing ARIA labels and focus states on table action buttons
+**Learning:** Icon-only buttons within data tables (like the Upload History) rely solely on `title` attributes, making them less accessible to screen readers and difficult to navigate via keyboard due to missing focus states.
+**Action:** Always ensure icon-only buttons include descriptive `aria-label`s that reference the specific row item (e.g., `aria-label="View logs for ${item.filename}"`) and clear focus states (e.g., `focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[color]`) for keyboard navigation.
