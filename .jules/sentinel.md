@@ -1,0 +1,4 @@
+## 2024-05-24 - Fix IDOR in Detail API Views
+**Vulnerability:** `TeamMemberDetailView` and `IntegrationApiKeyDetailView` were missing `IsAdminUser` permission classes, allowing any authenticated user to modify/delete API keys and team members due to the default `IsAuthenticated` permission.
+**Learning:** In Django REST Framework, detail views (which handle individual objects by ID) don't inherit permission classes from their corresponding list views. The default project-wide permission is only `IsAuthenticated`. This pattern of securing the list view but forgetting the detail view leads to direct object reference (IDOR) vulnerabilities.
+**Prevention:** Always explicitly declare `permission_classes = [IsAdminUser]` (or other appropriate custom permissions) on detail endpoints that require administrative access or modify sensitive data.
