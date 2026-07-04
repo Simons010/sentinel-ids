@@ -96,7 +96,8 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
             {/* Close button for mobile */}
             <button
               onClick={onMobileClose}
-              className="md:hidden p-2 text-gray-400 hover:text-white"
+              className="md:hidden p-2 text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]"
+              aria-label="Close menu"
             >
               <LogOut className="w-5 h-5 rotate-180" />
             </button>
@@ -137,8 +138,9 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
         >
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all`}
+            className={`w-full flex items-center ${isCollapsed ? "md:justify-center md:px-3" : "gap-3 px-4"} py-3 rounded-lg hover:bg-[#334155]  text-gray-400 hover:text-[#EF4444] transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]`}
             title={isCollapsed ? "Logout" : ""}
+            aria-label="Logout"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {(!isCollapsed || isMobileOpen) && (
