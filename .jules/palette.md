@@ -1,0 +1,3 @@
+## 2024-07-04 - Improve button accessibility with focus states and ARIA labels
+**Learning:** Many icon-only buttons across the app lacked ARIA labels and focus rings. This creates a confusing experience for screen reader and keyboard users, as they either hear nothing or cannot see where their focus is. Standardizing focus states using `focus-visible:ring-2 focus-visible:outline-none` greatly improves keyboard navigability without compromising mouse user experience.
+**Action:** Ensure all interactive elements, especially icon-only buttons, have an `aria-label` and consistent focus states (e.g., `focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE]`) across all new components.
