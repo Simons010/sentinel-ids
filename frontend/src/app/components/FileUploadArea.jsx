@@ -50,11 +50,20 @@ export function FileUploadArea({ onFilesSelected }) {
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-all ${
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            document.getElementById("file-upload")?.click();
+          }
+        }}
+        className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-all focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#22D3EE] ${
           isDragging
             ? "border-[#22D3EE] bg-[#22D3EE]/5"
             : "border-[#334155] hover:border-[#22D3EE]/50"
         }`}
+        role="button"
+        aria-label="Upload log files drop zone"
       >
         <input
           type="file"
