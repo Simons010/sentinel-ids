@@ -1,0 +1,4 @@
+## 2026-07-05 - Insecure Direct Object Reference (IDOR) on Settings Detail Views
+**Vulnerability:** The API views for managing sensitive settings (`IntegrationApiKeyDetailView` and `TeamMemberDetailView`) missed the `permission_classes = [IsAdminUser]` declaration, defaulting to the weaker `IsAuthenticated`.
+**Learning:** Even when the list/creation views (`IntegrationApiKeysView`, `TeamMembersView`) are correctly secured with `IsAdminUser`, detail views operating on individual objects require explicit permission checks to prevent IDOR and broken access control. Default DRF configurations might not provide sufficient protection for sensitive endpoints.
+**Prevention:** Consistently apply and verify role-based access controls across all related views, particularly detail views, and implement robust test cases to assert that non-admin authenticated users receive a 403 Forbidden response on restricted operations.
