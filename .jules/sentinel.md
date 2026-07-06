@@ -1,0 +1,4 @@
+## 2024-07-06 - Missing Authorization Checks on Detail Endpoints
+**Vulnerability:** Found missing authorization checks on detail views (`IntegrationApiKeyDetailView`, `TeamMemberDetailView`) in `backend/app/api/views.py`. These endpoints inherited the default `IsAuthenticated` instead of the required `IsAdminUser` that their corresponding list views correctly used.
+**Learning:** Detail views must explicitly define their own permission classes, they do not inherit them from related list views. This pattern creates an Insecure Direct Object Reference (IDOR) / Broken Access Control vulnerability.
+**Prevention:** Always verify that every view class explicitly declares `permission_classes` when overriding default permissions, especially for administrative endpoints.
