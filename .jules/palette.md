@@ -1,0 +1,3 @@
+## 2026-07-06 - Table Row Action Button Focus States
+**Learning:** The application's design system heavily uses `group-hover` color transitions on icon buttons within table rows. Without corresponding `group-focus-visible` classes, keyboard users miss visual feedback when navigating through these interactive elements, breaking the intended visual hierarchy.
+**Action:** Always pair `group-hover` color classes with equivalent `group-focus-visible` classes (e.g., `group-hover:text-[#22D3EE] group-focus-visible:text-[#22D3EE]`) alongside `focus-visible:ring-2` on the parent button when implementing table row actions.
