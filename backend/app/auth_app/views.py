@@ -6,10 +6,8 @@ from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+from app.api.views import IsAdminUser
 
-class IsD3fau1t(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.username == "d3fau1t"
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from app.users.models import UserProfile
@@ -32,7 +30,8 @@ def user_data(user):
         "email":       user.email,
         "first_name":  user.first_name,
         "last_name":   user.last_name,
-        "role":        profile.role        if profile else "viewer",
+        "role":        "admin" if user.is_superuser else (profile.role if profile else "viewer"),
+        "is_superuser": user.is_superuser,
         "is_approved": profile.is_approved if profile else False,
         "initials":    (
             (user.first_name[0] + user.last_name[0]).upper()
@@ -214,8 +213,8 @@ class MeView(APIView):
 
 
 class ApproveUserView(APIView):
-    """Admin-only (specifically d3fau1t) — approve a pending user."""
-    permission_classes = [IsD3fau1t]
+    """Admin-only — approve a pending user."""
+    permission_classes = [IsAdminUser]
 
     def post(self, request, user_id):
         approved = request.data.get("approved", True)
@@ -250,8 +249,8 @@ class ApproveUserView(APIView):
 
 
 class PendingUsersView(APIView):
-    """Admin-only (specifically d3fau1t) — list users awaiting approval."""
-    permission_classes = [IsD3fau1t]
+    """Admin-only — list users awaiting approval."""
+    permission_classes = [IsAdminUser]
 
     def get(self, request):
         pending = UserProfile.objects.filter(

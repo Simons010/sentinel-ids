@@ -1,0 +1,4 @@
+## 2024-07-07 - Hardcoded authentication bypass via default username
+**Vulnerability:** A hardcoded authentication bypass exists where the specific username "d3fau1t" is granted admin-level permissions (`IsD3fau1t` permission class in DRF, frontend sidebar checks, and settings page). The admin user can also approve pending users and has special permissions throughout the app.
+**Learning:** Checking for a specific hardcoded username instead of relying on role-based access control (RBAC) like `is_superuser` or a profile role creates an authorization bypass risk if someone creates this specific username or if the fallback check is incomplete.
+**Prevention:** Always use centralized role-based authorization properties (e.g., `is_superuser`, `role === 'admin'`) for determining access permissions rather than hardcoded usernames.
