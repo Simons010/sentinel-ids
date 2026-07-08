@@ -1,0 +1,3 @@
+## 2026-07-08 - Accessible Icon Buttons in Tables
+**Learning:** Found a recurring pattern in table rows where icon-only buttons rely on hover states (`group-hover:text-[COLOR]`) but lack keyboard focus visibility and screen reader context (`aria-label`). This makes navigation difficult for keyboard and screen reader users.
+**Action:** When adding hover states to icon buttons, pair `group-hover:text-[COLOR]` with `group-focus-visible:text-[COLOR]` on the icon, apply `focus-visible:ring-2 focus-visible:outline-none` with an appropriate ring color to the parent button, and always provide an `aria-label`.
