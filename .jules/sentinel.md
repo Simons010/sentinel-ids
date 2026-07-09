@@ -1,0 +1,4 @@
+## 2026-07-09 - Missing Administrative Authorization on Detail Endpoints
+**Vulnerability:** IDOR / Authorization Bypass. Detail endpoints like `TeamMemberDetailView` and `IntegrationApiKeyDetailView` lacked explicit `permission_classes = [IsAdminUser]` declarations, falling back to the DRF default `IsAuthenticated`. This allowed any authenticated user to modify or delete team members and API keys.
+**Learning:** Detail views do not automatically inherit permission classes from their corresponding list views (e.g., `TeamMembersView`). Administrative access checks must be explicitly defined on every endpoint that exposes administrative functionality to avoid privilege escalation.
+**Prevention:** Always define explicit `permission_classes` on every view class, especially when dealing with sensitive or administrative detail endpoints, rather than relying on global defaults, to ensure the principle of least privilege is maintained.
