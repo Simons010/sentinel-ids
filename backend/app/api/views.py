@@ -305,25 +305,28 @@ class DashboardStatsView(APIView):
         for i in range (24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
+
+            # Optimization: Consolidate sequential .count() queries into a single .aggregate() call to resolve N+1 issue inside the 24-hour loop.
+            logs_stats = logs_24h.filter(
                 timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
+                timestamp__lt=hour_end
+            ).aggregate(
+                normal=Count('id', filter=Q(is_suspicious=False)),
+                suspicious=Count('id', filter=Q(is_suspicious=True))
+            )
+
+            alerts_stats = alerts_24h.filter(
                 created_at__gte=hour_start, 
                 created_at__lt=hour_end
-            ).count()
+            ).aggregate(
+                confirmed=Count('id')
+            )
+
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "normal": logs_stats["normal"] or 0,
+                "suspicious": logs_stats["suspicious"] or 0,
+                "confirmed": alerts_stats["confirmed"] or 0
             })
         
         top_sources = list(
@@ -779,10 +782,18 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # Optimization: Consolidate sequential .count() queries into a single .aggregate() call to reduce database queries.
+        counts = annotated_logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold)),
+        )
+
+        tp = counts['tp'] or 0
+        tn = counts['tn'] or 0
+        fp = counts['fp'] or 0
+        fn = counts['fn'] or 0
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
@@ -795,25 +806,28 @@ class AnalyticsView(APIView):
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
+
+            # Optimization: Consolidate sequential .count() queries into a single .aggregate() call to resolve N+1 issue inside the 24-hour loop.
+            logs_stats = NetworkLog.objects.filter(
+                created_at__gte=hour_start,
+                created_at__lt=hour_end
+            ).aggregate(
+                normal=Count('id', filter=Q(is_suspicious=False)),
+                suspicious=Count('id', filter=Q(is_suspicious=True))
+            )
+
+            alerts_stats = Alert.objects.filter(
                 created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+                created_at__lt=hour_end
+            ).aggregate(
+                confirmed=Count('id')
+            )
+
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": logs_stats["normal"] or 0,
+                "suspicious": logs_stats["suspicious"] or 0,
+                "confirmed": alerts_stats["confirmed"] or 0,
             })
         
         # Attack type distribution
