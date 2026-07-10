@@ -1,0 +1,3 @@
+## 2024-07-10 - Table Row Icon Buttons Lack Accessibility
+**Learning:** Icon buttons within table rows (like in `UploadHistoryTable.jsx`) frequently lack `aria-label` attributes and keyboard focus indicators (`focus-visible` states), making them inaccessible to screen readers and keyboard users.
+**Action:** Always pair `group-hover:text-[COLOR]` with `group-focus-visible:text-[COLOR]` on icons, apply `focus-visible:ring-2 focus-visible:outline-none` (with matching ring color) to the parent button, and ensure an explicit `aria-label` is provided alongside the `title` attribute.
