@@ -61,10 +61,14 @@ def build_report_snapshot(
         else None
     )
 
-    tp = logs.filter(is_suspicious=True, ml_score__gte=threshold).count()
-    tn = logs.filter(is_suspicious=False, ml_score__lt=threshold).count()
-    fp = logs.filter(is_suspicious=False, ml_score__gte=threshold).count()
-    fn = logs.filter(is_suspicious=True, ml_score__lt=threshold).count()
+    from django.db.models import Count, Q
+    counts = logs.aggregate(
+        tp=Count('id', filter=Q(is_suspicious=True, ml_score__gte=threshold)),
+        tn=Count('id', filter=Q(is_suspicious=False, ml_score__lt=threshold)),
+        fp=Count('id', filter=Q(is_suspicious=False, ml_score__gte=threshold)),
+        fn=Count('id', filter=Q(is_suspicious=True, ml_score__lt=threshold))
+    )
+    tp, tn, fp, fn = counts['tp'], counts['tn'], counts['fp'], counts['fn']
     total_classified = tp + tn + fp + fn or 1
     accuracy = round((tp + tn) / total_classified * 100, 1)
     suspicious_log_count = logs.filter(is_suspicious=True).count()
