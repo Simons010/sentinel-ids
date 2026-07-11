@@ -1,0 +1,3 @@
+## 2023-10-25 - Icon Button Keyboard Accessibility in Tables
+**Learning:** Found a recurring pattern where icon-only action buttons in table rows (e.g., UploadHistoryTable) rely on `title` attributes without `aria-label`s, and have hover states (`group-hover:text-[COLOR]`) but lack keyboard focus states.
+**Action:** When adding hover states to icon buttons, always pair `group-hover:text-[COLOR]` with `group-focus-visible:text-[COLOR]` on the icon. Apply `focus-visible:ring-2 focus-visible:outline-none` (with matching ring color) to the parent `<button>`, and ensure an `aria-label` is present for screen readers.
