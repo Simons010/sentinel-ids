@@ -335,20 +335,33 @@ class DashboardStatsView(APIView):
             .order_by("-count")[:5]
         )
 
-        severity_counts = {
-            s: alerts_24h.filter(severity=s).count() 
-            for s in ["critical", "high", "medium", "low"]
-        }
+        # ⚡ Bolt Optimization: Consolidate multiple .count() queries into a single
+        # .aggregate() query to reduce database roundtrips and improve performance.
+        counts = alerts_24h.aggregate(
+            critical=Count('id', filter=Q(severity='critical')),
+            high=Count('id', filter=Q(severity='high')),
+            medium=Count('id', filter=Q(severity='medium')),
+            low=Count('id', filter=Q(severity='low'))
+        )
+        severity_counts = {k: v or 0 for k, v in counts.items()}
 
         # Model accuracy from all-time logs for consistency across pages
         from django.db.models.functions import Greatest
         threshold = 0.5
         all_annotated = NetworkLog.objects.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = all_annotated.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = all_annotated.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = all_annotated.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = all_annotated.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        # ⚡ Bolt Optimization: Replace sequential .count() calls with conditional
+        # aggregation to calculate all confusion matrix metrics in a single query.
+        counts = all_annotated.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = counts['tp'] or 0
+        tn = counts['tn'] or 0
+        fp = counts['fp'] or 0
+        fn = counts['fn'] or 0
         
         total_classified = tp + tn + fp + fn or 1
         accuracy = round((tp + tn) / total_classified * 100, 1) 
@@ -402,9 +415,16 @@ class ThreatsStatsView(APIView):
         alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
         
         #stats cards
-        active_alerts = alerts.filter(severity__in=["critical", "high", "medium", "low"]).count()
-        critical = alerts.filter(severity="critical").count()
-        medium = alerts.filter(severity="medium").count()
+        # ⚡ Bolt Optimization: Aggregate multiple counts in a single DB query
+        stats_counts = alerts.aggregate(
+            active_alerts=Count('id', filter=Q(severity__in=["critical", "high", "medium", "low"])),
+            critical=Count('id', filter=Q(severity="critical")),
+            medium=Count('id', filter=Q(severity="medium")),
+            blocked=Count('id', filter=Q(severity__in=["critical", "high"]))
+        )
+        active_alerts = stats_counts['active_alerts'] or 0
+        critical = stats_counts['critical'] or 0
+        medium = stats_counts['medium'] or 0
           
         # Top threat vectors - group by attack_type, count,assign severity
         top_vectors = list(
@@ -414,10 +434,15 @@ class ThreatsStatsView(APIView):
         )
         
         # Severity breakdown for pie chart
-        severity_breakdown = {
-            s: alerts_24h.filter(severity=s).count()
-            for s in ["critical", "high", "medium", "low", "informational"]
-        }
+        # ⚡ Bolt Optimization: Consolidate severity counts into one .aggregate() call
+        sb_counts = alerts_24h.aggregate(
+            critical=Count('id', filter=Q(severity='critical')),
+            high=Count('id', filter=Q(severity='high')),
+            medium=Count('id', filter=Q(severity='medium')),
+            low=Count('id', filter=Q(severity='low')),
+            informational=Count('id', filter=Q(severity='informational'))
+        )
+        severity_breakdown = {k: v or 0 for k, v in sb_counts.items()}
         
         # Threat level score (0-100) based on weighted severity of alerts in the last 24h
         from django.db.models import Sum
@@ -449,7 +474,7 @@ class ThreatsStatsView(APIView):
             "active_threats": active_alerts,
             "critical_threats": critical,
             "medium_priority": medium,
-            "blocked_attacks": alerts.filter(severity__in=["critical", "high"]).count(),
+            "blocked_attacks": stats_counts['blocked'] or 0,
             "threat_level": threat_level,
             "severity_breakdown": severity_breakdown,
             "top_threat_vectors": top_vectors,
@@ -779,10 +804,16 @@ class AnalyticsView(APIView):
         # against the final system decision (is_suspicious)
         annotated_logs = logs.annotate(effective_score=Greatest('ai_score', 'ml_score'))
         
-        tp = annotated_logs.filter(is_suspicious=True, effective_score__gte=threshold).count()
-        tn = annotated_logs.filter(is_suspicious=False, effective_score__lt=threshold).count()
-        fp = annotated_logs.filter(is_suspicious=False, effective_score__gte=threshold).count()
-        fn = annotated_logs.filter(is_suspicious=True, effective_score__lt=threshold).count()
+        counts = annotated_logs.aggregate(
+            tp=Count('id', filter=Q(is_suspicious=True, effective_score__gte=threshold)),
+            tn=Count('id', filter=Q(is_suspicious=False, effective_score__lt=threshold)),
+            fp=Count('id', filter=Q(is_suspicious=False, effective_score__gte=threshold)),
+            fn=Count('id', filter=Q(is_suspicious=True, effective_score__lt=threshold))
+        )
+        tp = counts['tp'] or 0
+        tn = counts['tn'] or 0
+        fp = counts['fp'] or 0
+        fn = counts['fn'] or 0
         total = tp + tn + fp + fn or 1
         
         accuracy = round((tp + tn) / total * 100, 1)
