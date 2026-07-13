@@ -1,0 +1,3 @@
+## 2024-05-18 - Replacing N+1 loops with grouped in-memory lists
+**Learning:** Generating hourly chart data with ORM calls inside a loop (`for i in range(24): filter(...).count()`) triggers 72 separate DB queries which drastically degrades performance. DB-level aggregations (`TruncHour`) can cause issues depending on mysql timezone configurations.
+**Action:** Fetch required logs in a single query with `.values()` and group the objects in-memory.
