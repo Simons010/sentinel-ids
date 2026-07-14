@@ -1,0 +1,3 @@
+## 2024-05-24 - Resolving N+1 query loops in time-based aggregations
+**Learning:** Performing database queries within a loop (e.g. counting events per hour over 24 hours using `count()`) creates an N+1 query performance bottleneck that severely degrades API endpoint response times. Using Django's `TruncHour` for time-based grouping causes 'Database returned an invalid datetime value' errors because the local MySQL environment lacks timezone definitions.
+**Action:** Replace looped database queries with a single query fetching necessary fields using `.values()`, and perform the grouping and counting in-memory to drastically reduce database overhead and response times.
