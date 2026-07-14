@@ -50,7 +50,7 @@ export function FileUploadArea({ onFilesSelected }) {
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-all ${
+        className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-all focus-within:border-[#22D3EE]/50 focus-within:ring-2 focus-within:ring-[#22D3EE] focus-within:ring-offset-2 focus-within:ring-offset-[#1E293B] ${
           isDragging
             ? "border-[#22D3EE] bg-[#22D3EE]/5"
             : "border-[#334155] hover:border-[#22D3EE]/50"
@@ -62,7 +62,7 @@ export function FileUploadArea({ onFilesSelected }) {
           multiple
           accept=".csv,.json,.txt,.log"
           onChange={handleFileInput}
-          className="hidden"
+          className="sr-only"
         />
 
         <div className="flex flex-col items-center gap-4">
@@ -81,7 +81,14 @@ export function FileUploadArea({ onFilesSelected }) {
 
           <label
             htmlFor="file-upload"
-            className="px-6 py-2.5 bg-[#22D3EE] text-white font-medium rounded-lg hover:bg-[#0EA5E9] transition-colors cursor-pointer"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                document.getElementById('file-upload').click();
+              }
+            }}
+            className="px-6 py-2.5 bg-[#22D3EE] text-white font-medium rounded-lg hover:bg-[#0EA5E9] transition-colors cursor-pointer focus:outline-none"
           >
             Browse Files
           </label>
