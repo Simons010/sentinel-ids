@@ -1,0 +1,3 @@
+## 2025-02-27 - Table Row Icon Buttons Keyboard Accessibility Pattern
+**Learning:** Icon-only action buttons in table rows (e.g., UploadHistoryTable) frequently use Tailwind's `group` and `group-hover:text-[COLOR]` for visual feedback but lack `group-focus-visible` variants and `aria-label` attributes, rendering them inaccessible to keyboard and screen reader users. The proper pattern in this app is to pair `group-hover` with `group-focus-visible` and apply `focus-visible:ring-2` to the parent.
+**Action:** When adding hover states to icon buttons using `group`, ensure `group-focus-visible` is also applied to the icon, pair it with `focus-visible:ring-2 focus-visible:outline-none` on the parent button, and always include an explicit `aria-label`.
