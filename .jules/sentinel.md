@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing Administrative Permissions on Detail Views
+**Vulnerability:** Found `IntegrationApiKeyDetailView` and `TeamMemberDetailView` lacking the explicit `IsAdminUser` permission class, allowing any authenticated user to perform sensitive actions like modifying or deleting team members and revoking API keys due to the default `IsAuthenticated` setting.
+**Learning:** In Django REST Framework, permission classes applied to a List/Create view (e.g., `TeamMembersView`) do not automatically cascade or apply to their corresponding Detail views (e.g., `TeamMemberDetailView`) when they are implemented as separate `APIView` classes rather than a unified `ViewSet`.
+**Prevention:** Always explicitly declare `permission_classes` on every individual `APIView` that exposes sensitive operations, or use DRF `ModelViewSet` where permissions can be applied uniformly across both list and detail routes.
