@@ -1,0 +1,3 @@
+## 2024-05-15 - Optimize N+1 Queries in DashboardStatsView and AnalyticsView
+**Learning:** In Django views where time-based aggregations are performed (e.g., hourly groupings), iterating over time ranges and running `.count()` queries inside the loop creates severe N+1 performance bottlenecks (72 queries per request in this case). Using `TruncHour` is not viable here because the local MySQL environment lacks timezone definitions, leading to invalid datetime value errors.
+**Action:** Avoid N+1 loops by fetching all necessary records into memory first using `.values('timestamp', 'is_suspicious')` and then performing the grouping and counting in Python. Maintain exact sliding-window time boundaries for accurate chart data.
