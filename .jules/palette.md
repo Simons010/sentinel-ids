@@ -1,0 +1,3 @@
+## 2025-02-28 - Adding accessible focus states for icon buttons in table rows
+**Learning:** When using icon buttons inside tables, they are often styled with `group-hover` applied to a parent button to change the icon color, but lack corresponding keyboard focus indications, making them hard to use for non-mouse users.
+**Action:** Consistently pair `group-hover:text-[COLOR]` on icons with `group-focus-visible:text-[COLOR]`, and add `focus-visible:ring-2 focus-visible:outline-none` on the parent button with corresponding semantic ring colors, along with `aria-label`s for screen readers.
