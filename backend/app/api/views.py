@@ -302,23 +302,27 @@ class DashboardStatsView(APIView):
         
         # Hourly breakdown for the chart (last 24 hours)
         hourly_data = []
+        logs_data = list(logs_24h.values('timestamp', 'is_suspicious'))
+        alerts_data = list(alerts_24h.values('created_at'))
+
         for i in range (24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+
+            normal = 0
+            suspicious = 0
+            for log in logs_data:
+                if hour_start <= log['timestamp'] < hour_end:
+                    if log['is_suspicious']:
+                        suspicious += 1
+                    else:
+                        normal += 1
+
+            confirmed = sum(
+                1 for alert in alerts_data
+                if hour_start <= alert['created_at'] < hour_end
+            )
+
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
                 "normal": normal,
@@ -792,23 +796,28 @@ class AnalyticsView(APIView):
         
         last_24h = timezone.now() - timedelta(hours=24)
         hourly_threat_data = []
+
+        logs_data = list(NetworkLog.objects.filter(created_at__gte=last_24h).values('created_at', 'is_suspicious'))
+        alerts_data = list(Alert.objects.filter(created_at__gte=last_24h).values('created_at'))
+
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+
+            normal = 0
+            suspicious = 0
+            for log in logs_data:
+                if hour_start <= log['created_at'] < hour_end:
+                    if log['is_suspicious']:
+                        suspicious += 1
+                    else:
+                        normal += 1
+
+            confirmed = sum(
+                1 for alert in alerts_data
+                if hour_start <= alert['created_at'] < hour_end
+            )
+
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
                 "normal": normal,
