@@ -1,0 +1,3 @@
+## 2026-07-16 - In-Memory Hourly Aggregation
+**Learning:** When performing time-based aggregations (e.g., hourly groupings) in Django views like DashboardStatsView or AnalyticsView, avoid using Django's TruncHour function. The local MySQL environment lacks timezone definitions, causing 'Database returned an invalid datetime value' errors. Looping 24 times and running 3 queries per iteration creates severe N+1 bottlenecks.
+**Action:** Fetch the necessary fields using .values() and perform the grouping and counting in-memory to resolve N+1 performance bottlenecks. Ensure exact sliding-window time boundaries (e.g., comparing timestamps to hour_start and hour_end) are maintained rather than bucketing by fixed string formats to avoid chart data regressions.
