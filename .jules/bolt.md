@@ -1,0 +1,3 @@
+## 2026-07-17 - In-memory hourly grouping to avoid N+1 and TruncHour errors
+**Learning:** Found an N+1 query bottleneck in DashboardStatsView and AnalyticsView where hourly statistics were generating 72 queries per request. Standard Django TruncHour aggregation is not viable here because the local MySQL environment lacks timezone definitions, leading to "invalid datetime value" errors.
+**Action:** Replaced the 72 DB queries inside the loop with a single .values() query for the required fields, followed by in-memory grouping using sliding-window time boundaries (comparing against hour_start and hour_end) to maintain accuracy and prevent regressions while bypassing the timezone issue.
