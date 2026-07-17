@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing Authorization on Admin Detail Endpoints
+**Vulnerability:** IDOR (Insecure Direct Object Reference) / Authorization Bypass on `IntegrationApiKeyDetailView` and `TeamMemberDetailView`. The list views had `permission_classes = [IsAdminUser]`, but the detail views relied on the default `IsAuthenticated` permission, allowing any logged-in user to delete API keys or team members.
+**Learning:** Always apply permission checks uniformly across all views related to a specific resource, especially DetailViews which are often overlooked compared to their List/Create counterparts.
+**Prevention:** Enforce a codebase standard where all APIViews explicitly declare their `permission_classes` rather than relying on global defaults, particularly for resources requiring administrative access.
