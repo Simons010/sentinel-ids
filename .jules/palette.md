@@ -1,0 +1,3 @@
+## 2023-10-27 - Icon-only buttons lacking keyboard accessibility in table rows
+**Learning:** When using icon-only action buttons within table rows (like in the upload history table), developers often add `title` attributes for mouse users but forget `aria-label` for screen readers and `focus-visible` styling for keyboard navigation. This renders critical actions invisible to assistive technologies and untrackable for keyboard users.
+**Action:** Standardize icon buttons in table rows to always include descriptive `aria-label`s and pair `group-hover:text-[COLOR]` with `group-focus-visible:text-[COLOR]` on icons, while applying `focus-visible:ring-2 focus-visible:outline-none` on the parent button.
