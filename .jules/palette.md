@@ -1,0 +1,3 @@
+## 2024-07-18 - Keyboard Accessibility Pattern for Table Row Icon Buttons
+**Learning:** Found a reusable UX pattern for this design system: icon buttons within table rows require explicit ARIA labels and consistent focus states (`focus-visible:ring-2`) combined with icon color changes (`group-focus-visible:text-[COLOR]`) to match hover states for full keyboard accessibility.
+**Action:** Always pair `group-hover` with `group-focus-visible` on icons and apply `focus-visible:ring-2 focus-visible:outline-none` with the appropriate ring color to their parent buttons.
