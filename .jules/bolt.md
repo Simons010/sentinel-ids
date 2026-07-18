@@ -1,0 +1,3 @@
+## 2024-05-24 - In-Memory Time-Based Aggregations
+**Learning:** Performing time-based aggregations (e.g., hourly bucketing) in Django views by querying the database in a loop causes severe N+1 query bottlenecks (e.g., 72 queries per view). Additionally, using Django's `TruncHour` as an alternative causes "Database returned an invalid datetime value" errors in the local MySQL environment because it lacks timezone definitions.
+**Action:** Always fetch the necessary fields using `.values()` and perform the grouping and counting in-memory for exact sliding-window time boundaries. This resolves the N+1 performance bottleneck while maintaining chart data consistency without relying on database timezone functions.
