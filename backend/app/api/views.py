@@ -301,24 +301,18 @@ class DashboardStatsView(APIView):
             threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
+        # ⚡ Bolt: Fetch needed fields into memory to resolve N+1 query issue (reduces 72 queries to 2)
+        logs_24h_data = list(logs_24h.values('timestamp', 'is_suspicious'))
+        alerts_24h_data = list(alerts_24h.values('created_at'))
+
         hourly_data = []
+        now = timezone.now()
         for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
+            hour_start = now - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+            normal = sum(1 for log in logs_24h_data if log['timestamp'] and hour_start <= log['timestamp'] < hour_end and not log['is_suspicious'])
+            suspicious = sum(1 for log in logs_24h_data if log['timestamp'] and hour_start <= log['timestamp'] < hour_end and log['is_suspicious'])
+            confirmed = sum(1 for alert in alerts_24h_data if alert['created_at'] and hour_start <= alert['created_at'] < hour_end)
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
                 "normal": normal,
