@@ -791,29 +791,32 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
-        hourly_threat_data = []
+
+        log_annotations = {}
+        alert_annotations = {}
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+
+            key = f"h_{i}"
+
+            log_annotations[f"{key}_normal"] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            log_annotations[f"{key}_suspicious"] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+
+            alert_annotations[f"{key}_confirmed"] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        logs_agg = NetworkLog.objects.filter(created_at__gte=last_24h).aggregate(**log_annotations)
+        alerts_agg = Alert.objects.filter(created_at__gte=last_24h).aggregate(**alert_annotations)
+
+        hourly_threat_data = []
+        for i in range(24):
+            hour_start = timezone.now() - timedelta(hours=24 - i)
+            key = f"h_{i}"
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": logs_agg.get(f"{key}_normal", 0),
+                "suspicious": logs_agg.get(f"{key}_suspicious", 0),
+                "confirmed": alerts_agg.get(f"{key}_confirmed", 0),
             })
         
         # Attack type distribution
