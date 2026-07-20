@@ -955,6 +955,7 @@ class ReportView(APIView):
 
 
 class ReportDownloadView(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request, pk):
         report = Report.objects.filter(pk=pk).first()
         if not report:
@@ -1011,6 +1012,7 @@ class IntegrationApiKeysView(APIView):
 
 
 class IntegrationApiKeyDetailView(APIView):
+    permission_classes = [IsAdminUser]
     def delete(self, request, key_id):
         key = IntegrationApiKey.objects.filter(id=key_id).first()
         if not key:
@@ -1035,6 +1037,7 @@ class TeamMembersView(APIView):
 
 
 class TeamMemberDetailView(APIView):
+    permission_classes = [IsAdminUser]
     def patch(self, request, member_id):
         member = TeamMember.objects.filter(id=member_id).first()
         if not member:
