@@ -1,0 +1,3 @@
+## 2026-03-05 - File Upload Accessibility Pattern
+**Learning:** Using `className="hidden"` on `<input type="file">` within custom upload dropzones completely removes the input from keyboard navigation, preventing users from accessing it via Tab.
+**Action:** Instead of `hidden`, use `sr-only peer` on the input, and style the visual trigger (like a `<label>`) using `peer-focus-visible`. This correctly keeps the input in the document flow for keyboard interactions while visually applying focus styles to the designated custom button, without needing custom script handling or extra `tabIndex`.
