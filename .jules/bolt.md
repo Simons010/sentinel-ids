@@ -1,0 +1,3 @@
+## 2024-03-24 - N+1 Queries in Time-based Aggregations
+**Learning:** Using `.count()` inside a time-based loop (like `for i in range(24)`) in Python memory generates catastrophic N+1 query patterns for both logs and alerts.
+**Action:** When calculating hourly breakdowns, unconditionally use native Django `aggregate` with `Count(Case(When(...)))` conditions to enforce a single database hit and avoid Out-Of-Memory/timeout issues.
