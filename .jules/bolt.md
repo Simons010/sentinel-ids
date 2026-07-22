@@ -1,0 +1,3 @@
+## 2024-07-22 - Fix N+1 queries in Time-Based Aggregations
+**Learning:** Fetching high-volume datasets into python for loops using `.filter(...).count()` within 24-hour loops creates a massive N+1 bottleneck and severe CPU loads, while `.values()` leads to OOM errors. Local dev might miss timezone data preventing `TruncHour` usage.
+**Action:** Always prefer DB-native aggregations like explicit conditional aggregation (`Count('id', filter=Q(...))`) to construct a single robust aggregate query rather than looping over DB calls, even when handling local MariaDB timezone bugs.
