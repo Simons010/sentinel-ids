@@ -1,0 +1,3 @@
+## 2024-07-22 - Accessible File Upload Dropzone
+**Learning:** The "hidden" class on file inputs in dropzones completely removes them from the tab order, breaking keyboard accessibility. We can use "sr-only peer" on the input to keep it in the DOM for screen readers and keyboard navigation.
+**Action:** When implementing custom file upload UI with hidden `<input type="file">`, place it immediately before its visual trigger (like a `<label>`), use `sr-only peer` instead of `hidden`, and use `peer-focus-visible` classes on the trigger to style the keyboard focus state visually, without causing a double-focus stop.
