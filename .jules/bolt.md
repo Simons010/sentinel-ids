@@ -1,0 +1,3 @@
+## 2024-05-27 - Optimizing time-based aggregations
+**Learning:** In Django, using `.count()` inside loops to aggregate time-series data (e.g., hourly stats over 24 hours) causes the N+1 query problem, severely impacting performance.
+**Action:** Always replace repeated `.count()` queries inside loops with a single `.aggregate()` query using Django's `Count` and `Q` objects to offload the counting to the database natively and avoid memory bloat.
