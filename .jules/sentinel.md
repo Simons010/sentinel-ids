@@ -1,0 +1,4 @@
+## 2024-07-23 - Prevent IDOR on Detail API Views
+**Vulnerability:** Administrative detail views (`IntegrationApiKeyDetailView`, `TeamMemberDetailView`, `ReportDownloadView`) were missing explicit `permission_classes = [IsAdminUser]`, falling back to the default `IsAuthenticated`. This allowed any authenticated user to perform sensitive actions like revoking API keys, deleting team members, and downloading reports.
+**Learning:** In Django REST Framework, detail views do not automatically inherit permissions from their corresponding list views. Even if `IntegrationApiKeysView` has `IsAdminUser`, `IntegrationApiKeyDetailView` must independently declare it.
+**Prevention:** Always explicitly define `permission_classes` on every view class, especially detail views, instead of relying on default global settings. Apply the Principle of Least Privilege consistently across all endpoints.
