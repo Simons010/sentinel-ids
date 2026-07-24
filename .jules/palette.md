@@ -1,0 +1,3 @@
+## 2026-07-24 - File Upload Keyboard Accessibility
+**Learning:** Using `hidden` on file inputs removes them from the accessibility tree and tab order. To maintain accessibility while customizing the visual appearance, the input must be styled with `sr-only peer` and placed immediately preceding its visual trigger (like a label).
+**Action:** Always use `className="sr-only peer"` on hidden file inputs and apply `peer-focus-visible` utility classes to the associated label to ensure keyboard focus states are visible without creating a double focus stop.
