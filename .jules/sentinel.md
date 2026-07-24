@@ -1,0 +1,4 @@
+## 2024-07-24 - Fix IDOR vulnerabilities in detail views
+**Vulnerability:** Missing explicit permission classes (`IsAdminUser`) on detail API endpoints (`ReportDownloadView`, `IntegrationApiKeyDetailView`, `TeamMemberDetailView`) in Django REST Framework, resulting in Insecure Direct Object References (IDOR) where any authenticated user could perform unauthorized administrative actions.
+**Learning:** Detail views in Django REST Framework do not automatically inherit `permission_classes` from their associated list views (e.g., `IntegrationApiKeysView`). Each individual view class must explicitly declare its own permissions to override the default global configuration (`IsAuthenticated`).
+**Prevention:** Always explicitly declare `permission_classes` on every view class, especially for detail endpoints that modify or expose sensitive data, rather than assuming inheritance from related list views.
