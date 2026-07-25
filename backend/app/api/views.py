@@ -302,28 +302,26 @@ class DashboardStatsView(APIView):
         
         # Hourly breakdown for the chart (last 24 hours)
         hourly_data = []
+        aggregations = {}
+        alert_aggregations = {}
+        now = timezone.now()
         for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
+            hour_start = now - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+            aggregations[f'normal_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=False))
+            aggregations[f'suspicious_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=True))
+            alert_aggregations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        logs_stats = logs_24h.aggregate(**aggregations)
+        alerts_stats = alerts_24h.aggregate(**alert_aggregations)
+
+        for i in range (24):
+            hour_start = now - timedelta(hours=24 - i)
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "normal": logs_stats.get(f'normal_{i}', 0),
+                "suspicious": logs_stats.get(f'suspicious_{i}', 0),
+                "confirmed": alerts_stats.get(f'confirmed_{i}', 0)
             })
         
         top_sources = list(
@@ -792,28 +790,26 @@ class AnalyticsView(APIView):
         
         last_24h = timezone.now() - timedelta(hours=24)
         hourly_threat_data = []
+        aggregations = {}
+        alert_aggregations = {}
+        now = timezone.now()
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
+            hour_start = now - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+            aggregations[f'normal_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            aggregations[f'suspicious_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+            alert_aggregations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        logs_stats = NetworkLog.objects.filter(created_at__gte=last_24h).aggregate(**aggregations)
+        alerts_stats = Alert.objects.filter(created_at__gte=last_24h).aggregate(**alert_aggregations)
+
+        for i in range(24):
+            hour_start = now - timedelta(hours=24 - i)
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": logs_stats.get(f'normal_{i}', 0),
+                "suspicious": logs_stats.get(f'suspicious_{i}', 0),
+                "confirmed": alerts_stats.get(f'confirmed_{i}', 0),
             })
         
         # Attack type distribution
