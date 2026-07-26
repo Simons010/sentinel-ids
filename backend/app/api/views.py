@@ -301,29 +301,36 @@ class DashboardStatsView(APIView):
             threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
-        hourly_data = []
-        for i in range (24):
+        log_aggregations = {}
+        alert_aggregations = {}
+        hours_info = []
+
+        for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+
+            log_aggregations[f'normal_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=False))
+            log_aggregations[f'suspicious_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=True))
+
+            alert_aggregations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+            hours_info.append({
+                "hour_start": hour_start,
+                "hour_str": hour_start.strftime("%H:%M"),
+                "index": i
+            })
+
+        log_counts = logs_24h.aggregate(**log_aggregations)
+        alert_counts = alerts_24h.aggregate(**alert_aggregations)
+
+        hourly_data = []
+        for info in hours_info:
+            i = info["index"]
             hourly_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "hour": info["hour_str"],
+                "normal": log_counts.get(f'normal_{i}', 0),
+                "suspicious": log_counts.get(f'suspicious_{i}', 0),
+                "confirmed": alert_counts.get(f'confirmed_{i}', 0)
             })
         
         top_sources = list(
@@ -791,29 +798,39 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
-        hourly_threat_data = []
+        log_aggregations = {}
+        alert_aggregations = {}
+        hours_info = []
+
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+
+            log_aggregations[f'normal_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            log_aggregations[f'suspicious_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+
+            alert_aggregations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+            hours_info.append({
+                "hour_start": hour_start,
+                "hour_str": hour_start.strftime("%H:%M"),
+                "index": i
+            })
+
+        logs_24h_qs = NetworkLog.objects.filter(created_at__gte=last_24h)
+        alerts_24h_qs = Alert.objects.filter(created_at__gte=last_24h)
+
+        log_counts = logs_24h_qs.aggregate(**log_aggregations)
+        alert_counts = alerts_24h_qs.aggregate(**alert_aggregations)
+
+        hourly_threat_data = []
+        for info in hours_info:
+            i = info["index"]
             hourly_threat_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "hour": info["hour_str"],
+                "normal": log_counts.get(f'normal_{i}', 0),
+                "suspicious": log_counts.get(f'suspicious_{i}', 0),
+                "confirmed": alert_counts.get(f'confirmed_{i}', 0)
             })
         
         # Attack type distribution
