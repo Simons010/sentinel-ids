@@ -1,0 +1,3 @@
+## 2024-07-26 - Accessible File Upload Dropzones
+**Learning:** Using `className="hidden"` on a `<input type="file">` removes it entirely from the accessibility tree and tab order, making keyboard navigation impossible. Retaining it with `sr-only` keeps it focusable, but requires a way to show visual focus on its associated label.
+**Action:** Use Tailwind's `peer` utility class on the `sr-only` input and place it immediately before its visual trigger (the `<label>`). Apply `peer-focus-visible:*` classes to the label to proxy the focus state visually without creating unintended 'double focus' stops by adding `tabIndex={0}` to the label.
