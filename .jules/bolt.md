@@ -1,0 +1,3 @@
+## 2024-05-24 - Fix N+1 queries in dashboard time-based aggregations
+**Learning:** When building time-based aggregations (e.g. hourly buckets), looping over time intervals and performing separate `.count()` queries results in significant N+1 regressions. Using dictionary unpacking of dynamic `Count('id', filter=Q(...))` objects inside a single `.aggregate(**aggregations)` forces the DB engine to execute the logic locally and drastically reduces load. Also, `timestamp` and `created_at` can be mixed up, `created_at` should consistently be used for aggregation.
+**Action:** Use `.aggregate(**aggregations)` with dynamic `Count(..., filter=Q(...))` for time buckets instead of python `for` loops making individual DB queries.
