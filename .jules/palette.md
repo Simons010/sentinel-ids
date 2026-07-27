@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessible Hidden File Inputs
+**Learning:** Using `className="hidden"` on file inputs completely removes them from the tab order, breaking keyboard accessibility for upload dropzones. Replacing it with `sr-only` makes it focusable, but the visual focus indicator needs to be proxied to its associated label trigger using Tailwind's `peer` and `peer-focus-visible` to maintain a clear visual focus path.
+**Action:** Always use `sr-only peer` on file inputs immediately followed by their `<label>` and style the label with `peer-focus-visible` instead of removing the input from the document flow or adding redundant `tabIndex` to labels.
