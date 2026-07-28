@@ -1,0 +1,3 @@
+## 2024-05-24 - N+1 Query Anti-pattern in Dashboard Time-Series Data
+**Learning:** The dashboard and analytics views were fetching time-series data using a massive N+1 query pattern (running 72 separate `.count()` queries inside a 24-hour loop for normal, suspicious, and confirmed counts). Fetching large logs via `.values()` and Python loops causes OOM, so we can't do that, but multiple `.count()` calls are still extremely slow and block the thread.
+**Action:** Always use conditional aggregations (`Count('id', filter=Q(...))`) packed into a dictionary and unpacked into a single `.aggregate(**aggregations)` call to force the database engine to execute the counting natively in a single query.
