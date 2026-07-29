@@ -1,0 +1,3 @@
+## 2024-05-24 - N+1 Queries in Time-Based Aggregations
+**Learning:** Time-based aggregations (e.g., hourly threat data) using loops and `.count()` result in severe N+1 query bottlenecks (72+ queries per request). Furthermore, fetching high-volume datasets like `NetworkLog` into Python memory using `.values()` and loops causes critical Out-Of-Memory (OOM) regressions.
+**Action:** Always resolve time-based N+1 query problems in Django by building a dictionary of dynamic `Count('id', filter=Q(...))` objects and unpacking it into a single `.aggregate(**aggregations)` call. This pushes conditional counting to the database engine in one efficient query without memory overhead.
