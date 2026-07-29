@@ -1,0 +1,3 @@
+## 2024-05-18 - Accessible File Upload Focus States
+**Learning:** Hidden `<input type="file">` elements (`display: none` or `className="hidden"`) are removed from the tab order, breaking keyboard navigation for file upload components. Placing the input immediately before its trigger label in the DOM with `className="sr-only peer"` preserves tab order while hiding it visually, and enables styling the label using Tailwind's `peer-focus-visible` utilities.
+**Action:** Always use `className="sr-only peer"` on file inputs, position them directly above their `<label>` in the DOM tree, and apply `peer-focus-visible` utilities to the label to create accessible focus states without introducing duplicate tab stops.
