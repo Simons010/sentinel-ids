@@ -1,0 +1,3 @@
+## 2024-07-30 - Keyboard Accessible File Dropzones
+**Learning:** When building custom file dropzones, setting the `<input type="file">` to `display: none` (`hidden`) removes it from the accessibility tree and keyboard tab order, preventing keyboard-only users from triggering the file dialog.
+**Action:** Use `sr-only` to keep the input accessible and in the tab order. Move the input to be a direct sibling of its visual trigger (like a `<label>`), add the `peer` class to the input, and use `peer-focus-visible:ring-2` (etc.) on the label to visually show keyboard focus without causing double-focus stops.
