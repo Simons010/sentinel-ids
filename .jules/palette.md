@@ -1,0 +1,3 @@
+## 2024-07-31 - Fix Visual Focus States for Hidden Inputs
+**Learning:** Hidden inputs cannot receive focus. To fix this, change `<input type="file" className="hidden">` to `className="sr-only peer"` alongside styling its `label` with `peer-focus-visible` utility classes correctly preserves tab order and enables focus visualization without introducing 'double focus' issues.
+**Action:** Always check file inputs and other hidden elements to ensure they maintain proper keyboard focus accessibility without causing 'double focus' issues, using classes such as `sr-only peer` and `peer-focus-visible`.

@@ -56,15 +56,6 @@ export function FileUploadArea({ onFilesSelected }) {
             : "border-[#334155] hover:border-[#22D3EE]/50"
         }`}
       >
-        <input
-          type="file"
-          id="file-upload"
-          multiple
-          accept=".csv,.json,.txt,.log"
-          onChange={handleFileInput}
-          className="hidden"
-        />
-
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 bg-gradient-to-br from-[#22D3EE] to-[#0EA5E9] rounded-full flex items-center justify-center">
             <Upload className="w-8 h-8 text-white animate-pulse" />
@@ -79,9 +70,17 @@ export function FileUploadArea({ onFilesSelected }) {
             </p>
           </div>
 
+          <input
+            type="file"
+            id="file-upload"
+            multiple
+            accept=".csv,.json,.txt,.log"
+            onChange={handleFileInput}
+            className="sr-only peer"
+          />
           <label
             htmlFor="file-upload"
-            className="px-6 py-2.5 bg-[#22D3EE] text-white font-medium rounded-lg hover:bg-[#0EA5E9] transition-colors cursor-pointer"
+            className="px-6 py-2.5 bg-[#22D3EE] text-white font-medium rounded-lg hover:bg-[#0EA5E9] transition-colors cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-[#22D3EE] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#1E293B] peer-focus-visible:outline-none"
           >
             Browse Files
           </label>
