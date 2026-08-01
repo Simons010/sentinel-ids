@@ -1,0 +1,4 @@
+## 2024-05-24 - Missing Access Control on Detail Endpoints
+**Vulnerability:** IDOR (Insecure Direct Object Reference) / Missing authorization on `ReportDownloadView`, `IntegrationApiKeyDetailView`, and `TeamMemberDetailView`.
+**Learning:** In Django REST Framework, detail API views do not automatically inherit permissions from their corresponding list views. Even if `IntegrationApiKeysView` requires `IsAdminUser`, `IntegrationApiKeyDetailView` defaults to `IsAuthenticated` unless explicitly specified.
+**Prevention:** Always explicitly declare `permission_classes` on every APIView class (both list and detail) to ensure consistent access control and prevent unauthorized access.
