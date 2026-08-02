@@ -301,30 +301,25 @@ class DashboardStatsView(APIView):
             threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
-        hourly_data = []
-        for i in range (24):
+        # Optimized to fix N+1 query problem by pushing conditional counts to the DB
+        log_aggs, alert_aggs, hours_info = {}, {}, []
+        for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
-            hourly_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
-            })
+            hours_info.append(hour_start)
+            log_aggs[f'n_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=False))
+            log_aggs[f's_{i}'] = Count('id', filter=Q(timestamp__gte=hour_start, timestamp__lt=hour_end, is_suspicious=True))
+            alert_aggs[f'c_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        log_counts = logs_24h.aggregate(**log_aggs)
+        alert_counts = alerts_24h.aggregate(**alert_aggs)
+
+        hourly_data = [{
+            "hour": hours_info[i].strftime("%H:%M"),
+            "normal": log_counts.get(f'n_{i}', 0),
+            "suspicious": log_counts.get(f's_{i}', 0),
+            "confirmed": alert_counts.get(f'c_{i}', 0)
+        } for i in range(24)]
         
         top_sources = list(
             all_alerts.exclude(log__src_ip=None)
@@ -791,30 +786,27 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
-        hourly_threat_data = []
+        # Optimized to fix N+1 query problem by pushing conditional counts to the DB
+        log_aggs, alert_aggs, hours_info = {}, {}, []
         for i in range(24):
             hour_start = timezone.now() - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
-            hourly_threat_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
-            })
+            hours_info.append(hour_start)
+            log_aggs[f'n_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            log_aggs[f's_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+            alert_aggs[f'c_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        logs_24h = NetworkLog.objects.filter(created_at__gte=last_24h)
+        alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
+        log_counts = logs_24h.aggregate(**log_aggs)
+        alert_counts = alerts_24h.aggregate(**alert_aggs)
+
+        hourly_threat_data = [{
+            "hour": hours_info[i].strftime("%H:%M"),
+            "normal": log_counts.get(f'n_{i}', 0),
+            "suspicious": log_counts.get(f's_{i}', 0),
+            "confirmed": alert_counts.get(f'c_{i}', 0)
+        } for i in range(24)]
         
         # Attack type distribution
         attack_dist = list(
