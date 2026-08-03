@@ -301,29 +301,31 @@ class DashboardStatsView(APIView):
             threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
-        hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
+        # ⚡ Bolt Optimization: Fix N+1 query problem by replacing looped .count() queries
+        # with a single database-native .aggregate() call containing conditional Count objects.
+        # Impact: Reduces database queries from 72 (3 per hour for 24 hours) down to 2,
+        # significantly lowering latency and DB load for this critical dashboard view.
+        log_aggs = {}
+        alert_aggs = {}
+        now = timezone.now()
+        for i in range(24):
+            hour_start = now - timedelta(hours=24 - i)
             hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+            log_aggs[f'normal_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            log_aggs[f'suspicious_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+            alert_aggs[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        log_res = logs_24h.aggregate(**log_aggs) if log_aggs else {}
+        alert_res = alerts_24h.aggregate(**alert_aggs) if alert_aggs else {}
+
+        hourly_data = []
+        for i in range(24):
+            hour_start = now - timedelta(hours=24 - i)
             hourly_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "normal": log_res.get(f'normal_{i}', 0),
+                "suspicious": log_res.get(f'suspicious_{i}', 0),
+                "confirmed": alert_res.get(f'confirmed_{i}', 0)
             })
         
         top_sources = list(
@@ -791,29 +793,34 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
+        logs_24h = NetworkLog.objects.filter(created_at__gte=last_24h)
+        alerts_24h = Alert.objects.filter(created_at__gte=last_24h)
+
+        # ⚡ Bolt Optimization: Fix N+1 query problem by replacing looped .count() queries
+        # with a single database-native .aggregate() call containing conditional Count objects.
+        # Impact: Reduces database queries from 72 (3 per hour for 24 hours) down to 2,
+        # significantly lowering latency and DB load for the analytics view.
+        log_aggs = {}
+        alert_aggs = {}
+        now = timezone.now()
+        for i in range(24):
+            hour_start = now - timedelta(hours=24 - i)
+            hour_end = hour_start + timedelta(hours=1)
+            log_aggs[f'normal_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=False))
+            log_aggs[f'suspicious_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end, is_suspicious=True))
+            alert_aggs[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=hour_start, created_at__lt=hour_end))
+
+        log_res = logs_24h.aggregate(**log_aggs) if log_aggs else {}
+        alert_res = alerts_24h.aggregate(**alert_aggs) if alert_aggs else {}
+
         hourly_threat_data = []
         for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+            hour_start = now - timedelta(hours=24 - i)
             hourly_threat_data.append({
                 "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "normal": log_res.get(f'normal_{i}', 0),
+                "suspicious": log_res.get(f'suspicious_{i}', 0),
+                "confirmed": alert_res.get(f'confirmed_{i}', 0),
             })
         
         # Attack type distribution
