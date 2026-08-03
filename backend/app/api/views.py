@@ -956,7 +956,7 @@ class ReportView(APIView):
 
 class ReportDownloadView(APIView):
     def get(self, request, pk):
-        report = Report.objects.filter(pk=pk).first()
+        report = Report.objects.filter(pk=pk, generated_by=request.user).first()
         if not report:
             return Response({"error": "Report not found"}, status=404)
         try:
