@@ -1,0 +1,3 @@
+## 2026-08-03 - Fix N+1 queries in time-based aggregations
+**Learning:** Using loops to repeatedly query counts in Django for time-based buckets causes severe N+1 query problems. Extracting large datasets into Python using `.values()` and loops can cause OOM regressions. Using `timestamp` instead of `created_at` in `NetworkLog` causes mismatched date ranges.
+**Action:** When fixing N+1 query problems in time-based aggregations, build a dictionary of dynamic `Count('id', filter=Q(...))` objects and unpack it into a single `.aggregate(**aggregations)` call. This pushes all conditional counting to the database natively and prevents memory exhaustion. Always use `created_at` instead of `timestamp` in time-based filters on `NetworkLog`.
