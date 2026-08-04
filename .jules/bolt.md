@@ -1,0 +1,3 @@
+## 2024-08-04 - N+1 Query in Hourly Aggregation
+**Learning:** Resolving N+1 queries in Django time-based buckets requires dynamic Count with Q objects unpacked into a single aggregate call. NetworkLog has both timestamp and created_at fields, and created_at should be used for time-based filters to avoid mismatched date ranges. Do not fetch high-volume datasets into Python memory.
+**Action:** Always check the specific codebase field names and use database-native aggregations like Count and Q filters for dashboards.
