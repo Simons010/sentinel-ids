@@ -1,0 +1,3 @@
+## 2024-08-04 - Accessible File Input Focus States
+**Learning:** To properly style visual focus states for accessible hidden file inputs using Tailwind CSS, use `className="sr-only peer"` on the input element, place it as a direct DOM sibling immediately preceding its visual trigger (such as a `<label>`), and apply `peer-focus-visible` utility classes to the trigger. The `peer` utilities rely on the CSS general sibling combinator (`~`), meaning they will not work if the trigger is nested inside another element.
+**Action:** Use the `sr-only peer` pattern and ensure the input is a direct preceding sibling of its trigger label to maintain keyboard accessibility for custom file uploads.
