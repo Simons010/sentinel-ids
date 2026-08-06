@@ -1,0 +1,3 @@
+## 2024-08-06 - Fixing N+1 Queries in Time-Based Aggregations
+**Learning:** Found N+1 query problem where 24 hours of data was calculated by doing 3 distinct database queries inside a 24-iteration loop, causing 72 queries. A better pattern for Django to prevent fetching all objects to memory (which can cause an OOM error) is to construct a dictionary of `Count('id', filter=Q(...))` objects dynamically and unpack them into a single `.aggregate()` call to perform counting natively in the database.
+**Action:** Always use conditional `Count` inside `.aggregate()` for bucketed time series data instead of looping database queries.
