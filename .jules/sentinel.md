@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing IDOR prevention and permissions on Django API Detail Views
+**Vulnerability:** Several Detail API Views (`IntegrationApiKeyDetailView`, `TeamMemberDetailView`) were missing authorization and missing object-level access checks, potentially leading to Broken Object Level Authorization (BOLA/IDOR) and unauthorized access since `permission_classes` is required on each class explicitly when inheriting from `APIView`.
+**Learning:** In Django REST Framework, detail API views do not automatically inherit permissions from their corresponding list views. You must explicitly declare `permission_classes` on every view class (e.g., `IntegrationApiKeyDetailView`) to ensure consistent access control and prevent IDOR vulnerabilities.
+**Prevention:** Always ensure `permission_classes` are added to Detail views mirroring their List views.
