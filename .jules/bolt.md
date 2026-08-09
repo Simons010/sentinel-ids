@@ -1,0 +1,3 @@
+## 2024-05-18 - Fix N+1 queries in time-based aggregations
+**Learning:** Found an N+1 query bottleneck in DashboardStatsView and AnalyticsView hourly loop calculations. We were previously iterating 24 times and running 3 separate query counts per iteration (72 queries per view). Fetching high-volume datasets (like NetworkLog) into Python memory using .values() and loops is an anti-pattern. Instead, building a dictionary of dynamic Count('id', filter=Q(...)) objects and unpacking it into a single .aggregate(**aggregations) call resolves the issue natively in DB.
+**Action:** When implementing time-based analytics aggregation, construct the multiple aggregations programmatically with Count and Q filters and unpack them into a single aggregate call.
