@@ -1011,6 +1011,9 @@ class IntegrationApiKeysView(APIView):
 
 
 class IntegrationApiKeyDetailView(APIView):
+    # Added to prevent IDOR / unauthorized access to integration API keys
+    permission_classes = [IsAdminUser]
+
     def delete(self, request, key_id):
         key = IntegrationApiKey.objects.filter(id=key_id).first()
         if not key:
@@ -1035,6 +1038,9 @@ class TeamMembersView(APIView):
 
 
 class TeamMemberDetailView(APIView):
+    # Added to prevent IDOR / unauthorized modification or deletion of team members
+    permission_classes = [IsAdminUser]
+
     def patch(self, request, member_id):
         member = TeamMember.objects.filter(id=member_id).first()
         if not member:
