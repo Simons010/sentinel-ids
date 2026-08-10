@@ -147,8 +147,9 @@ export function UploadHistoryTable({
                       <button
                         onClick={() => onViewLogs?.(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group"
+                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:ring-[#22D3EE] focus-visible:outline-none"
                         title="View logs"
+                        aria-label={`View logs for ${item.filename}`}
                       >
                         <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#22D3EE]" />
                       </button>
@@ -156,8 +157,9 @@ export function UploadHistoryTable({
                         <button
                           onClick={() => onReanalyze?.(item)}
                           disabled={actionsDisabled}
-                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group"
+                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:outline-none"
                           title="Reanalyze"
+                          aria-label={`Reanalyze ${item.filename}`}
                         >
                           <RotateCw className="w-4 h-4 text-gray-400 group-hover:text-[#10B981]" />
                         </button>
@@ -165,8 +167,9 @@ export function UploadHistoryTable({
                       <button
                         onClick={() => setDeleteTarget(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group"
+                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:ring-[#EF4444] focus-visible:outline-none"
                         title="Delete"
+                        aria-label={`Delete ${item.filename}`}
                       >
                         <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-[#EF4444]" />
                       </button>
