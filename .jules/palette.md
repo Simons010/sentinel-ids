@@ -1,0 +1,3 @@
+## 2023-10-27 - Action Buttons Accessibility in Upload History
+**Learning:** Found that the action buttons (View Logs, Reanalyze, Delete) in the `UploadHistoryTable` component lacked proper focus states for keyboard navigation and ARIA labels. Since they are icon-only buttons, they are completely inaccessible to screen readers without `aria-label`s, and users navigating via keyboard cannot easily see which button is focused.
+**Action:** Always add `aria-label`s to icon-only buttons, and use Tailwind's `focus-visible:` utilities (`focus-visible:ring-2 focus-visible:ring-[color] focus-visible:outline-none`) to ensure keyboard focus is clearly visible without relying on generic outline rings, adhering to the application's design system.
