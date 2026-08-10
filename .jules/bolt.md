@@ -1,0 +1,3 @@
+## 2024-05-18 - Fix N+1 Query in Django Views via Conditional Aggregation
+**Learning:** Found N+1 queries in time-based aggregations (e.g., DashboardStatsView and AnalyticsView hourly breakdowns). High-volume tables were repeatedly queried inside a loop instead of using single-pass conditional aggregation, causing massive performance bottleneck (72 sequential count queries). We must not fetch datasets to Python memory (e.g., .values() and looping) due to OOM risks. We need to push aggregations natively to DB.
+**Action:** Resolve by creating a single `.aggregate()` call with dynamic `Count('id', filter=Q(...))` objects to evaluate all counts for all hours in one database query, avoiding N+1 loops and python-side aggregation.
