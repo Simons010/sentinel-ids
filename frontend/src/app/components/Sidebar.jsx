@@ -97,6 +97,7 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
             <button
               onClick={onMobileClose}
               className="md:hidden p-2 text-gray-400 hover:text-white"
+              aria-label="Close menu"
             >
               <LogOut className="w-5 h-5 rotate-180" />
             </button>
