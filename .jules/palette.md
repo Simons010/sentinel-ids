@@ -1,0 +1,3 @@
+## 2024-05-24 - Missing ARIA Labels on Icon-Only Buttons
+**Learning:** Many icon-only buttons across the application (like close menus, action buttons in tables, and file list removal buttons) lack descriptive `aria-label` attributes, relying solely on visual icons or `title` attributes which are often insufficient for screen reader users.
+**Action:** Systematically added `aria-label` to prominent icon-only buttons across multiple components (`Sidebar`, `UploadHistoryTable`, `RecentAlertsTable`, `UploadedFilesList`) to ensure proper screen reader accessibility without relying solely on tooltip `title` attributes.
