@@ -1,0 +1,4 @@
+## 2024-05-18 - Missing Authorization on Admin Detail Endpoints
+**Vulnerability:** Found missing authorization checks on detail endpoints for Admin-only list views (`IntegrationApiKeyDetailView`, `TeamMemberDetailView`).
+**Learning:** In Django REST Framework, the default permission (`IsAuthenticated`) might not be sufficient for endpoints modifying system-wide settings or admin-level data, especially when these detail endpoints correspond to admin-only list views (`IntegrationApiKeysView`, `TeamMembersView` use `IsAdminUser`). Because there's no object-level checking like `organization` filter on these models, failing to add `permission_classes = [IsAdminUser]` leads to an authorization bypass where any authenticated user can modify or delete API keys and team members.
+**Prevention:** Always ensure that detail views apply the same or stricter permission classes as their corresponding list views, especially for admin/tenant-level objects.
