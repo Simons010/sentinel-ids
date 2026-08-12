@@ -1,0 +1,3 @@
+## 2025-03-04 - Fix N+1 queries using conditional aggregation
+**Learning:** Found N+1 query problem where DashboardStatsView and AnalyticsView ran 72 queries each to calculate hourly stats. The correct way to fix this in Django without introducing timezone grouping errors or running out of memory is to build a dict of Count('id', filter=Q(...)) for each hour and unpack it into a single .aggregate(**aggregations) call, pushing the calculations entirely into the DB engine in a single query.
+**Action:** Always prefer conditional aggregation over iterative database hits, especially when bucketing time sequences in the database.
