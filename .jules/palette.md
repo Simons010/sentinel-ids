@@ -1,0 +1,3 @@
+## 2024-08-13 - File Input Keyboard Accessibility Focus
+**Learning:** When hiding file inputs using `hidden`, they become completely inaccessible to keyboard navigation and screen readers. To maintain keyboard focusability while styling a custom file upload button, the input must use `sr-only` instead, and be placed as a direct sibling of the visual trigger to utilize Tailwind's `peer-focus-visible`.
+**Action:** Use `className="sr-only peer"` on the input and place it directly before the `<label>` so we can use `peer-focus-visible` utility classes on the label to display a visual focus ring when the hidden input receives focus via keyboard navigation.
