@@ -1,0 +1,3 @@
+## 2024-08-13 - Dashboard N+1 Query Fix
+**Learning:** `DashboardStatsView` and `AnalyticsView` loop over 24 hours to generate stats, resulting in multiple queries that cause high performance overheads and slow loading times. The query counting for `hourly_data` can be executed within a single query using Django's database level `.aggregate()` function combined with `Q` object filters.
+**Action:** Extract this query to generate an aggregation dictionary in memory instead of multiple round trip executions. This is significantly faster and doesn't load everything into Python memory, avoiding N+1 and OOM errors.
