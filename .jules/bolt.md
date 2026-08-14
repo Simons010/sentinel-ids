@@ -1,0 +1,3 @@
+## 2025-08-14 - Fix N+1 queries in time-based aggregations using Django Count filter
+**Learning:** Avoid fetching data into Python memory using `.values()` and looping, as this can trigger Out-Of-Memory (OOM) regressions for datasets. Instead, resolve N+1 queries in Django time-based calculations by building dictionaries of `Count('id', filter=Q(...))` objects and unpacking them into a single `.aggregate(**aggregations)` query. This pushes all counting natively into the database engine and avoids timezone function limitations.
+**Action:** When identifying loops performing many `.count()` aggregations over specific intervals, replace them with a single dictionary-driven `.aggregate()` call to reduce query overhead.
