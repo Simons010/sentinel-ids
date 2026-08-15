@@ -95,6 +95,7 @@ export function Sidebar({ isCollapsed, isMobileOpen, onMobileClose }) {
 
             {/* Close button for mobile */}
             <button
+              aria-label="Close mobile menu"
               onClick={onMobileClose}
               className="md:hidden p-2 text-gray-400 hover:text-white"
             >
