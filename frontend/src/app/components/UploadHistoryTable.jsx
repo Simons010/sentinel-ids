@@ -145,6 +145,7 @@ export function UploadHistoryTable({
                   <td className="py-4 px-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        aria-label="View logs"
                         onClick={() => onViewLogs?.(item)}
                         disabled={actionsDisabled}
                         className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group"
@@ -154,6 +155,7 @@ export function UploadHistoryTable({
                       </button>
                       {item.status !== "processing" && (
                         <button
+                          aria-label="Reanalyze"
                           onClick={() => onReanalyze?.(item)}
                           disabled={actionsDisabled}
                           className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group"
@@ -163,6 +165,7 @@ export function UploadHistoryTable({
                         </button>
                       )}
                       <button
+                        aria-label="Delete"
                         onClick={() => setDeleteTarget(item)}
                         disabled={actionsDisabled}
                         className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group"
