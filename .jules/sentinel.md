@@ -1,0 +1,4 @@
+## 2024-05-24 - Missing Authorization Check on Detail Endpoints
+**Vulnerability:** Authorization bypass / IDOR on detail views (e.g., `IntegrationApiKeyDetailView`, `TeamMemberDetailView`).
+**Learning:** The project relies on a custom `IsAdminUser` permission for admin endpoints. However, developers correctly secured the list endpoints (`IntegrationApiKeysView`, `TeamMembersView`) but forgot to secure the corresponding detail endpoints. Because Django REST Framework defaults to `IsAuthenticated`, any authenticated user could modify or delete API keys and team members. The lack of object-level filtering (like an `organization` field) exacerbated this.
+**Prevention:** Always ensure detail views inherit the same permission classes as their parent list views unless intentionally opened up. Review both list and detail API endpoints simultaneously during authorization audits.
