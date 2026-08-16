@@ -301,29 +301,27 @@ class DashboardStatsView(APIView):
             threat_level = 0
         
         # Hourly breakdown for the chart (last 24 hours)
+
+        hour_starts = [timezone.now() - timedelta(hours=24 - i) for i in range(24)]
+        log_annotations = {}
+        alert_annotations = {}
+
+        for i, start_h in enumerate(hour_starts):
+            end_h = start_h + timedelta(hours=1)
+            log_annotations[f'normal_{i}'] = Count('id', filter=Q(timestamp__gte=start_h, timestamp__lt=end_h, is_suspicious=False))
+            log_annotations[f'suspicious_{i}'] = Count('id', filter=Q(timestamp__gte=start_h, timestamp__lt=end_h, is_suspicious=True))
+            alert_annotations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=start_h, created_at__lt=end_h))
+
+        log_aggs = logs_24h.aggregate(**log_annotations)
+        alert_aggs = alerts_24h.aggregate(**alert_annotations)
+
         hourly_data = []
-        for i in range (24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = logs_24h.filter(
-                timestamp__gte=hour_start, 
-                timestamp__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = alerts_24h.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end
-            ).count()
+        for i, start_h in enumerate(hour_starts):
             hourly_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed
+                "hour": start_h.strftime("%H:%M"),
+                "normal": log_aggs[f'normal_{i}'],
+                "suspicious": log_aggs[f'suspicious_{i}'],
+                "confirmed": alert_aggs[f'confirmed_{i}']
             })
         
         top_sources = list(
@@ -791,29 +789,30 @@ class AnalyticsView(APIView):
         f1 = round(2 * precision * recall / (precision + recall or 1), 1)
         
         last_24h = timezone.now() - timedelta(hours=24)
+
+        hour_starts = [timezone.now() - timedelta(hours=24 - i) for i in range(24)]
+        log_annotations = {}
+        alert_annotations = {}
+
+        for i, start_h in enumerate(hour_starts):
+            end_h = start_h + timedelta(hours=1)
+            log_annotations[f'normal_{i}'] = Count('id', filter=Q(created_at__gte=start_h, created_at__lt=end_h, is_suspicious=False))
+            log_annotations[f'suspicious_{i}'] = Count('id', filter=Q(created_at__gte=start_h, created_at__lt=end_h, is_suspicious=True))
+            alert_annotations[f'confirmed_{i}'] = Count('id', filter=Q(created_at__gte=start_h, created_at__lt=end_h))
+
+        logs_qs = NetworkLog.objects.filter(created_at__gte=last_24h)
+        alerts_qs = Alert.objects.filter(created_at__gte=last_24h)
+
+        log_aggs = logs_qs.aggregate(**log_annotations)
+        alert_aggs = alerts_qs.aggregate(**alert_annotations)
+
         hourly_threat_data = []
-        for i in range(24):
-            hour_start = timezone.now() - timedelta(hours=24 - i)
-            hour_end = hour_start + timedelta(hours=1)
-            normal = NetworkLog.objects.filter(
-                created_at__gte=hour_start, 
-                created_at__lt=hour_end,
-                is_suspicious=False
-            ).count()
-            suspicious = NetworkLog.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_suspicious=True
-            ).count()
-            confirmed = Alert.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-            ).count()
+        for i, start_h in enumerate(hour_starts):
             hourly_threat_data.append({
-                "hour": hour_start.strftime("%H:%M"),
-                "normal": normal,
-                "suspicious": suspicious,
-                "confirmed": confirmed,
+                "hour": start_h.strftime("%H:%M"),
+                "normal": log_aggs[f'normal_{i}'],
+                "suspicious": log_aggs[f'suspicious_{i}'],
+                "confirmed": alert_aggs[f'confirmed_{i}'],
             })
         
         # Attack type distribution
