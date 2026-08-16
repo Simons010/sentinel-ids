@@ -26,7 +26,7 @@ const InputField = ({
 }) => (
   <div className="space-y-1.5">
     <div className="flex justify-between items-center">
-      <label className="block text-sm font-medium text-gray-400">{label}</label>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-400">{label}</label>
       {validation[name]?.checking ? (
         <span className="text-[10px] text-cyan-400 font-medium flex items-center gap-1">
           <Loader2 className="w-3 h-3 animate-spin" />
@@ -43,6 +43,7 @@ const InputField = ({
     </div>
     <div className="relative">
       <input
+        id={name}
         name={name}
         type={type === "password" && showPassword ? "text" : type}
         value={form[name]}
@@ -56,6 +57,7 @@ const InputField = ({
           type="button"
           onClick={() => setShowPassword(!showPassword)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+          aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {showPassword ? (
             <EyeOff className="w-4 h-4" />
