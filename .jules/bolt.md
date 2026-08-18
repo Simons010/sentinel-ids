@@ -1,0 +1,3 @@
+## 2024-08-18 - Fix N+1 queries in time-based aggregations
+**Learning:** When dealing with time-based grouping in Django and facing local database timezone limitations that prevent the use of TruncHour, you can bypass this natively by dynamically generating a dictionary of Count(filter=Q(...)) annotations in Python (e.g., iterating through hours) and passing them into a single .aggregate() call. This avoids severe N+1 query loop regressions without fetching large datasets into Python memory.
+**Action:** Use this dynamic aggregation approach instead of Python-level loops when TruncHour causes timezone errors in local databases.
