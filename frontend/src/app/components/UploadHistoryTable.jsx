@@ -147,7 +147,8 @@ export function UploadHistoryTable({
                       <button
                         onClick={() => onViewLogs?.(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group"
+                        aria-label={`View logs for ${item.filename}`}
+                        className="p-2 hover:bg-[#22D3EE]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:outline-none"
                         title="View logs"
                       >
                         <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#22D3EE]" />
@@ -156,7 +157,8 @@ export function UploadHistoryTable({
                         <button
                           onClick={() => onReanalyze?.(item)}
                           disabled={actionsDisabled}
-                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group"
+                          aria-label={`Reanalyze ${item.filename}`}
+                          className="p-2 hover:bg-[#10B981]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:outline-none"
                           title="Reanalyze"
                         >
                           <RotateCw className="w-4 h-4 text-gray-400 group-hover:text-[#10B981]" />
@@ -165,7 +167,8 @@ export function UploadHistoryTable({
                       <button
                         onClick={() => setDeleteTarget(item)}
                         disabled={actionsDisabled}
-                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group"
+                        aria-label={`Delete ${item.filename}`}
+                        className="p-2 hover:bg-[#EF4444]/10 rounded transition-colors group focus-visible:ring-2 focus-visible:outline-none"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-[#EF4444]" />
